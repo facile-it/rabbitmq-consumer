@@ -1,0 +1,45 @@
+language: rust
+
+sudo: required
+
+rust:
+  - stable
+
+cache: cargo
+
+addons:
+  apt:
+    packages:
+      - cmake
+      - build-essential
+      - libssl-dev
+      - libmysqlclient-dev
+      - libz-dev
+
+services: rabbitmq
+
+script:
+    - wget http://www.zlib.net/zlib-1.2.11.tar.gz
+    - tar -xvzf zlib-1.2.11.tar.gz
+    - cd zlib-1.2.11
+    - CFLAGS="-O3 -fPIC" ./configure
+    - sudo make
+    - sudo make install
+    - sudo cp /usr/local/lib/libz.a /usr/lib/x86_64-linux-gnu/libz.a
+    - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libz.a
+    - cargo build --verbose --all
+    - cargo test  --verbose --all
+
+before_install:
+  - pkg-config --list-all
+
+after_success: |
+    if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
+        `RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install --force cargo-tarpaulin`
+        cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+    fi
+
+branches:
+  only:
+    - master
+    - develop
