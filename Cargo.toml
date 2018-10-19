@@ -1,10 +1,8 @@
 [package]
 name = "rabbitmq-consumer"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Dario Cancelliere <dario.cancelliere@facile.it>"]
 build = "build.rs"
-
-# $ rustup default nightly-2018-06-01
 
 [dependencies]
 tokio = "^0.1"

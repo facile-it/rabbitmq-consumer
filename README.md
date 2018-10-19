@@ -129,6 +129,9 @@ This section defines the MySQL configuration.
 > `db_name = "database"`
 >> The MySQL server database name to use.
 
+> `retries = 3`
+>> Specify how many retries of MySQL if connection is lost before ending the process
+
 ## Queues and consumers
 There are two ways for configuring queues:
 

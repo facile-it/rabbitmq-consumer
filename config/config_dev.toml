@@ -9,7 +9,7 @@ queue_prefix = "queue_"
 [[rabbit.queues]]
 id = 1
 queue_name = "example"
-consumer_name = "example_consumer"
+consumer_name = "example"
 command = "echo 1"
 command_timeout = 30
 base64 = false
