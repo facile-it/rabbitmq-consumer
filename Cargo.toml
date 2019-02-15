@@ -1,6 +1,6 @@
 [package]
 name = "rabbitmq-consumer"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Dario Cancelliere <dario.cancelliere@facile.it>"]
 build = "build.rs"
 
