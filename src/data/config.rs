@@ -85,34 +85,34 @@ pub fn option_i32_or_string<'de, D>(deserializer: D) -> Result<Option<i32>, D::E
     }
 }
 
-pub fn config_loader(args: Vec<String>) -> Config {
+pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
     let default = "local";
-    let environment = match args.get(1) {
-        Some(e) => {
-            if e == "--env" {
-                match args.get(2) {
-                    Some(name) => name,
-                    None => default,
-                }
-            } else {
-                default
-            }
-        }
-        None => default,
+
+    let path = match path {
+        Some(path) => format!("{}/", path),
+        None => "".into(),
     };
 
-    let environment = format!("config/config_{}.toml", environment);
+    let environment = format!(
+        "{}config/config_{}.toml",
+        path,
+        match environment {
+            Some(env) => env,
+            None => default,
+        }
+    );
+
     let config = {
-        match File::open(&Path::new("config/config.toml")) {
+        match File::open(&Path::new(&format!("{}config/config.toml", path))) {
             Err(_) => match File::open(&Path::new(&environment)) {
-                Err(_) => "config/config_dev.toml",
-                Ok(_) => &environment,
+                Err(_) => format!("{}config/config_dev.toml", path),
+                Ok(_) => environment,
             },
-            Ok(_) => "config/config.toml",
+            Ok(_) => format!("{}config/config.toml", path),
         }
     };
 
-    let path = Path::new(config);
+    let path = Path::new(&config);
     let display = path.display();
     let mut file = match File::open(&path) {
         Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
