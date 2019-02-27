@@ -17,21 +17,47 @@ extern crate serde_derive;
 extern crate diesel;
 extern crate base64;
 extern crate chrono;
+extern crate clap;
 
 mod consumer;
 mod data;
 mod logger;
 
-use std::env;
 use std::thread;
 use std::time::Duration;
+
+use clap::{Arg, App};
 
 use consumer::{Consumer, ConsumerResult};
 
 const LOOP_WAIT: u64 = 1000;
 
 fn main() {
-    let mut consumer = Consumer::new(data::config::config_loader(env::args().collect()));
+    let matches = App::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .author("Dario Cancelliere <dario.cancelliere@facile.it>")
+        .about("A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.")
+        .arg(Arg::with_name("env")
+            .short("e")
+            .long("env")
+            .required(false)
+            .takes_value(true)
+            .help("Environment for configuration file loading"))
+        .arg(Arg::with_name("path")
+            .short("p")
+            .long("path")
+            .required(false)
+            .takes_value(true)
+            .help("Base application path"))
+        .get_matches();
+
+    let mut consumer = Consumer::new(
+        data::config::config_loader(
+            matches.value_of("env"),
+            matches.value_of("path")
+        )
+    );
+
     loop {
         match consumer.run() {
             Ok(ConsumerResult::CountChanged) => {
