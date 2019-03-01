@@ -3,13 +3,13 @@ use std::net::ToSocketAddrs;
 use std::panic;
 use std::rc::Rc;
 
-use data;
-use data::{models::QueueSetting, plain::Plain, DatabasePlain, RetryMode, RetryType};
+use crate::data;
+use crate::data::{models::QueueSetting, plain::Plain, DatabasePlain, RetryMode, RetryType};
 
 #[test]
 fn file_read_empty() {
     let result = panic::catch_unwind(|| {
-        data::config::config_loader(vec![]);
+        data::config::config_loader(None, None);
     });
 
     assert!(result.is_ok());
@@ -18,7 +18,7 @@ fn file_read_empty() {
 #[test]
 fn file_read_dev() {
     let result = panic::catch_unwind(|| {
-        data::config::config_loader(vec!["--env".into(), "dev".into()]);
+        data::config::config_loader(Some("dev"), None);
     });
 
     assert!(result.is_ok());
@@ -27,7 +27,7 @@ fn file_read_dev() {
 #[test]
 fn file_read_prod() {
     let result = panic::catch_unwind(|| {
-        data::config::config_loader(vec!["--env".into(), "prod".into()]);
+        data::config::config_loader(Some("prod"), None);
     });
 
     assert!(result.is_ok());
@@ -35,7 +35,7 @@ fn file_read_prod() {
 
 #[test]
 fn address() {
-    let config = data::config::config_loader(vec![]);
+    let config = data::config::config_loader(None, None);
     let address = format!("{}:{}", config.rabbit.host, config.rabbit.port).to_socket_addrs();
 
     assert!(address.is_ok());
@@ -44,7 +44,7 @@ fn address() {
 
 #[test]
 fn waits() {
-    let config = data::config::config_loader(vec![]);
+    let config = data::config::config_loader(None, None);
     let data = Rc::new(RefCell::new(DatabasePlain::new({
         Box::new(Plain::new(config.rabbit.queues.clone()))
     })));
