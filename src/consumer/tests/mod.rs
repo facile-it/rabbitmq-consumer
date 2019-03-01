@@ -13,13 +13,11 @@ use lapin::{
     client::Heartbeat,
 };
 
-use consumer::{Consumer, ConsumerResult};
-use data::{
-    config::{Config, DatabaseConfig, RabbitConfig},
-    models::QueueSetting,
-    plain::Plain,
-    DatabasePlain,
-};
+use crate::consumer::{Consumer, ConsumerResult};
+use crate::data::config::{Config, DatabaseConfig, RabbitConfig};
+use crate::data::models::QueueSetting;
+use crate::data::plain::Plain;
+use crate::data::DatabasePlain;
 
 fn get_queues() -> Vec<QueueSetting> {
     vec![
