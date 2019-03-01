@@ -1,9 +1,9 @@
 use diesel::mysql::MysqlConnection;
 use diesel::prelude::*;
 
-use data::models::QueueSetting;
-use data::schema::queues;
-use data::{config::DatabaseConfig, Data};
+use crate::data::models::QueueSetting;
+use crate::data::schema::queues;
+use crate::data::{config::DatabaseConfig, Data};
 
 pub struct Database {
     pub connection: MysqlConnection,

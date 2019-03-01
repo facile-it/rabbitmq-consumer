@@ -30,8 +30,10 @@ use lapin::{
 };
 
 use self::message::Message;
-use data::{config::Config, database::Database, models::QueueSetting, plain::Plain, DatabasePlain};
-use logger;
+use crate::data::{
+    config::Config, database::Database, models::QueueSetting, plain::Plain, DatabasePlain,
+};
+use crate::logger;
 
 const CONSUMER_WAIT: u64 = 60000;
 const DEFAULT_WAIT_PART: u64 = 1000;

@@ -1,5 +1,5 @@
-use data::models::QueueSetting;
-use data::Data;
+use crate::data::models::QueueSetting;
+use crate::data::Data;
 
 pub struct Plain {
     queues: Vec<QueueSetting>,
