@@ -175,24 +175,21 @@ fn consumer_changed() {
         ))
         .unwrap();
 
-    assert!(
-        runtime
-            .block_on(result.0.basic_publish(
-                "",
-                &format!("{}{}", config.rabbit.queue_prefix, queue_setting.queue_name),
-                b"This is a test!".to_vec(),
-                BasicPublishOptions::default(),
-                BasicProperties::default(),
-            ))
-            .is_ok()
-    );
+    assert!(runtime
+        .block_on(result.0.basic_publish(
+            "",
+            &format!("{}{}", config.rabbit.queue_prefix, queue_setting.queue_name),
+            b"This is a test!".to_vec(),
+            BasicPublishOptions::default(),
+            BasicProperties::default(),
+        ))
+        .is_ok());
 
     queue_setting.count = 10;
 
-    assert!(
-        data.borrow_mut()
-            .is_changed(queue_setting.id, queue_setting.count)
-    );
+    assert!(data
+        .borrow_mut()
+        .is_changed(queue_setting.id, queue_setting.count));
 
     let future = Consumer::consumer(data, result.0, result.1, queue_setting, 0);
     let result = runtime.block_on(

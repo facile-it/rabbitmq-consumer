@@ -1,17 +1,17 @@
+use std::collections::HashMap;
+use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::env;
-use std::collections::HashMap;
 
 use toml;
 
-use std::str::FromStr;
 use serde::{de, Deserialize, Deserializer};
+use std::str::FromStr;
 
-use data::models::QueueSetting;
-use logger;
+use crate::data::models::QueueSetting;
+use crate::logger;
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -47,41 +47,49 @@ pub struct DatabaseConfig {
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum BoolOrString { Bool(bool), Str(String) }
+enum BoolOrString {
+    Bool(bool),
+    Str(String),
+}
 pub fn bool_or_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
-    where D: Deserializer<'de>
+where
+    D: Deserializer<'de>,
 {
     match BoolOrString::deserialize(deserializer)? {
-        BoolOrString::Bool(v) => { Ok(v) }
-        BoolOrString::Str(v) => {
-            bool::from_str(&v).map_err(de::Error::custom)
-        }
+        BoolOrString::Bool(v) => Ok(v),
+        BoolOrString::Str(v) => bool::from_str(&v).map_err(de::Error::custom),
     }
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum IntegerOrString { Integer(i32), Str(String) }
+enum IntegerOrString {
+    Integer(i32),
+    Str(String),
+}
 pub fn i32_or_string<'de, D>(deserializer: D) -> Result<i32, D::Error>
-    where D: Deserializer<'de>
+where
+    D: Deserializer<'de>,
 {
     match IntegerOrString::deserialize(deserializer)? {
-        IntegerOrString::Integer(v) => { Ok(v) }
-        IntegerOrString::Str(v) => {
-            i32::from_str(&v).map_err(de::Error::custom)
-        }
+        IntegerOrString::Integer(v) => Ok(v),
+        IntegerOrString::Str(v) => i32::from_str(&v).map_err(de::Error::custom),
     }
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum OptionIntegerOrString { Integer(i32), Str(String) }
+enum OptionIntegerOrString {
+    Integer(i32),
+    Str(String),
+}
 pub fn option_i32_or_string<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
-    where D: Deserializer<'de>
+where
+    D: Deserializer<'de>,
 {
     match i32_or_string(deserializer) {
         Ok(value) => Ok(Some(value)),
-        _ => Ok(None)
+        _ => Ok(None),
     }
 }
 
@@ -90,11 +98,11 @@ pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
 
     let path = match path {
         Some(path) => format!("{}/", path),
-        None => "".into(),
+        None => "config/".into(),
     };
 
     let environment = format!(
-        "{}config/config_{}.toml",
+        "{}config_{}.toml",
         path,
         match environment {
             Some(env) => env,
@@ -103,12 +111,12 @@ pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
     );
 
     let config = {
-        match File::open(&Path::new(&format!("{}config/config.toml", path))) {
+        match File::open(&Path::new(&format!("{}config.toml", path))) {
             Err(_) => match File::open(&Path::new(&environment)) {
-                Err(_) => format!("{}config/config_dev.toml", path),
+                Err(_) => format!("{}config_dev.toml", path),
                 Ok(_) => environment,
             },
-            Ok(_) => format!("{}config/config.toml", path),
+            Ok(_) => format!("{}config.toml", path),
         }
     };
 
@@ -127,10 +135,8 @@ pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
 
             let variables: HashMap<_, _> = env::vars().collect();
             for (key, value) in variables {
-                configuration = configuration.replace(
-                    &format!("\"${}\"", key),
-                    &format!("\"{}\"", value)
-                );
+                configuration =
+                    configuration.replace(&format!("\"${}\"", key), &format!("\"{}\"", value));
             }
 
             toml::from_str(&configuration).expect("Couldn't load the configuration file.")

@@ -19,9 +19,9 @@ use lapin_async::message::Delivery;
 
 use base64::encode as base64_encode;
 
-use consumer::{Consumer, ConsumerResult, DEFAULT_WAIT_PART};
-use data::{models::QueueSetting, DatabasePlain, RetryMode, RetryType};
-use logger;
+use crate::consumer::{Consumer, ConsumerResult, DEFAULT_WAIT_PART};
+use crate::data::{models::QueueSetting, DatabasePlain, RetryMode, RetryType};
+use crate::logger;
 
 pub struct Message;
 
@@ -47,7 +47,7 @@ impl Message {
         };
 
         let mut command = {
-            let mut cmd = data.borrow_mut().get_command(queue_setting.id);
+            let cmd = data.borrow_mut().get_command(queue_setting.id);
             let mut arguments = cmd.split(' ').collect::<VecDeque<&str>>();
             let mut command = Command::new(arguments.pop_front().unwrap());
             let mut additional_arguments = VecDeque::new();

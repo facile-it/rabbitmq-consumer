@@ -26,9 +26,9 @@ mod logger;
 use std::thread;
 use std::time::Duration;
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 
-use consumer::{Consumer, ConsumerResult};
+use crate::consumer::{Consumer, ConsumerResult};
 
 const LOOP_WAIT: u64 = 1000;
 
@@ -48,15 +48,13 @@ fn main() {
             .long("path")
             .required(false)
             .takes_value(true)
-            .help("Base application path"))
+            .help("Base config file path"))
         .get_matches();
 
-    let mut consumer = Consumer::new(
-        data::config::config_loader(
-            matches.value_of("env"),
-            matches.value_of("path")
-        )
-    );
+    let mut consumer = Consumer::new(data::config::config_loader(
+        matches.value_of("env"),
+        matches.value_of("path"),
+    ));
 
     loop {
         match consumer.run() {
