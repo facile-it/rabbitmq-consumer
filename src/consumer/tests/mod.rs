@@ -76,6 +76,7 @@ fn get_cfg() -> Config {
             vhost: "/".into(),
             queues: get_queues(),
             queue_prefix: "sample_".into(),
+            reconnections: Some(0),
         },
         database: DatabaseConfig {
             enabled: false,

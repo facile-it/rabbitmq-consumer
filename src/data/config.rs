@@ -29,6 +29,7 @@ pub struct RabbitConfig {
     pub vhost: String,
     pub queues: Vec<QueueSetting>,
     pub queue_prefix: String,
+    pub reconnections: Option<i32>,
 }
 
 #[derive(Deserialize, Clone)]

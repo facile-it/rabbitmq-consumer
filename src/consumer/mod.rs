@@ -38,6 +38,12 @@ use crate::logger;
 const CONSUMER_WAIT: u64 = 60000;
 const DEFAULT_WAIT_PART: u64 = 1000;
 
+#[allow(unused_variables)]
+pub trait Events {
+    fn on_connect(&mut self, host: &str, port: i32) {}
+    fn on_error(&mut self, error: &str) {}
+}
+
 #[derive(Debug, PartialEq)]
 pub enum ConsumerResult {
     CountChanged,
@@ -47,6 +53,7 @@ pub enum ConsumerResult {
 pub struct Consumer {
     config: Config,
     data: Rc<RefCell<DatabasePlain>>,
+    hooks: Vec<Rc<RefCell<Events>>>,
 }
 
 impl Consumer {
@@ -60,7 +67,12 @@ impl Consumer {
                 }
             }))),
             config,
+            hooks: Vec::new(),
         }
+    }
+
+    pub fn add_events_hook<E: Events + 'static>(&mut self, hook: Rc<RefCell<E>>) {
+        self.hooks.push(hook);
     }
 
     pub fn run(&mut self) -> Result<ConsumerResult> {
@@ -78,7 +90,19 @@ impl Consumer {
                     self.config.rabbit.vhost.clone(),
                 )
                 .and_then(|(client, heartbeat)| {
+                    for hook in &self.hooks {
+                        hook.borrow_mut()
+                            .on_connect(&self.config.rabbit.host, self.config.rabbit.port);
+                    }
+
                     Self::queues(data, client, heartbeat, queue_prefix)
+                })
+                .map_err(|e| {
+                    for hook in &self.hooks {
+                        hook.borrow_mut().on_error(&format!("{:?}", e));
+                    }
+
+                    e
                 }),
             )
     }
