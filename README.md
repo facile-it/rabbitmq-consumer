@@ -68,6 +68,9 @@ This section describes the connection to the AMQP server.
 > `queue_prefix = "queue_"`
 >> This is the internal prefix that the application will use to configure queues.
 
+> `reconnections = 0`
+>> By default the consumer will try to reconnect automatically indefinitely (default 0 value), change this value to limit reconnection retries
+
 ### [[rabbit.queues]] section
 This section (a TOML array) defines all queues and consumers.
 
