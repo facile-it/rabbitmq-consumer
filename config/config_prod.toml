@@ -5,6 +5,7 @@ username = "guest"
 password = "guest"
 vhost = "/"
 queue_prefix = "queue_"
+reconnections = 0
 
 [[rabbit.queues]]
 id = 1
