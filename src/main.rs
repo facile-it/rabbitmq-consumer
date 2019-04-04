@@ -67,11 +67,13 @@ fn main() {
 
                 thread::sleep(Duration::from_millis(waiting));
             }
-            ExecutorResult::Exit(error) => {
-                match error {
-                    Some(error) => logger::log(&format!("Error ({:?}), exiting...", error)),
-                    None => logger::log("Process finished, exiting..."),
-                }
+            ExecutorResult::Exit => {
+                logger::log("Process finished, exiting...");
+
+                break;
+            }
+            ExecutorResult::Error(e) => {
+                logger::log(&format!("Error ({:?}), exiting...", e));
 
                 break;
             }
