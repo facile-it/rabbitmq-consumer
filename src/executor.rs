@@ -5,8 +5,6 @@ use std::rc::Rc;
 use crate::consumer::{Consumer, ConsumerResult, Events};
 use crate::data::config::Config;
 
-const LOOP_WAIT: u64 = 500;
-
 #[derive(Debug)]
 pub enum ExecutorResult {
     Restart,
@@ -24,8 +22,6 @@ impl Executor {
     pub fn new(config: Config) -> Self {
         let waiter = Rc::new(RefCell::new(Waiter::new(
             config.rabbit.reconnections.unwrap_or(0),
-            LOOP_WAIT,
-            1,
         )));
 
         let mut consumer = Consumer::new(config);
@@ -57,20 +53,22 @@ struct Waiter {
 }
 
 impl Waiter {
-    pub fn new(connections: i32, waiting: u64, waiting_times: i32) -> Self {
+    const LOOP_WAIT: u64 = 500;
+
+    pub fn new(connections: i32) -> Self {
         Waiter {
             connections,
-            waiting,
-            waiting_times,
+            waiting: Self::LOOP_WAIT,
+            waiting_times: 0,
         }
     }
 
     pub fn is_to_close(&self) -> bool {
         if self.connections > 0 {
             if self.waiting_times < self.connections {
-                true
-            } else {
                 false
+            } else {
+                true
             }
         } else {
             false
@@ -80,8 +78,8 @@ impl Waiter {
 
 impl Events for Waiter {
     fn on_connect(&mut self, _host: &str, _port: i32) {
-        self.waiting = LOOP_WAIT;
-        self.waiting_times = 1;
+        self.waiting = Self::LOOP_WAIT;
+        self.waiting_times = 0;
     }
 
     fn on_error(&mut self, _error: &str) {
