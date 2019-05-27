@@ -29,8 +29,24 @@ NB: You need the `libmysqlclient-dev` package (for Ubuntu) or `mysql-client` (fo
 
 ## Usage
 
+Run without arguments to start with default configuration or with `--help` to show the help summary:
+
 ```
-rabbitmq-consumer
+$ rabbitmq-cli-consumer
+rabbitmq-consumer 0.6.5
+
+A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
+
+USAGE:
+    rabbitmq-consumer [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -e, --env <env>      Environment for configuration file loading
+    -p, --path <path>    Base config file path
 ```
 
 ## Process shutdown
@@ -41,10 +57,12 @@ The consumer handles the SIGTERM and SIGINT signals, so when a signal is receive
 The consumer loads the standard configuration file, located at `config/config.toml`, at runtime. Pass the `--env` parameter in order to load a custom configuration file, for example:
 
 ```
-rabbitmq-consumer --env dev
+$ rabbitmq-consumer --env dev
 ```
 
-This will load the file located at `config/config_dev.toml`, if exists, otherwise the consumer will fallback to the default `config.toml` file.
+This will load the file located at `config/config_dev.toml`, if exists, otherwise the consumer will fallback to the default `config/config.toml` file.
+
+You can also specify the configuration file base path with the `--path` option.
 
 ## config.toml
 ### [rabbit] section
@@ -69,7 +87,7 @@ This section describes the connection to the AMQP server.
 >> This is the internal prefix that the application will use to configure queues.
 
 > `reconnections = 0`
->> By default the consumer will try to reconnect automatically indefinitely (default 0 value), change this value to limit reconnection retries
+>> By default the consumer will try to reconnect to AMQP server automatically and indefinitely (default 0 value), change this value to limit reconnection retries.
 
 ### [[rabbit.queues]] section
 This section (a TOML array) defines all queues and consumers.
