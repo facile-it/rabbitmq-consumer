@@ -16,7 +16,8 @@ addons:
       - libmysqlclient-dev
       - libz-dev
 
-services: rabbitmq
+services:
+  - rabbitmq
 
 script:
     - wget http://www.zlib.net/zlib-1.2.11.tar.gz
@@ -28,7 +29,7 @@ script:
     - sudo cp /usr/local/lib/libz.a /usr/lib/x86_64-linux-gnu/libz.a
     - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libz.a
     - cargo build --verbose --all
-    - cargo test  --verbose --all
+    - cargo test --verbose --all
 
 before_install:
   - pkg-config --list-all
