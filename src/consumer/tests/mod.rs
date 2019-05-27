@@ -69,7 +69,7 @@ fn get_queues() -> Vec<QueueSetting> {
 fn get_cfg() -> Config {
     Config {
         rabbit: RabbitConfig {
-            host: "localhost".into(),
+            host: "127.0.0.1".into(),
             port: 5672,
             username: "guest".into(),
             password: "guest".into(),
