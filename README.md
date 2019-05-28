@@ -32,7 +32,7 @@ NB: You need the `libmysqlclient-dev` package (for Ubuntu) or `mysql-client` (fo
 Run without arguments to start with default configuration or with `--help` to show the help summary:
 
 ```
-$ rabbitmq-cli-consumer
+$ rabbitmq-consumer
 rabbitmq-consumer 0.6.5
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
