@@ -76,12 +76,12 @@ pub trait Data {
 }
 
 pub struct DatabasePlain {
-    inner: Box<Data>,
+    inner: Box<dyn Data>,
     waits: HashMap<(i32, i32), u64>,
 }
 
 impl DatabasePlain {
-    pub fn new(data: Box<Data>) -> Self {
+    pub fn new(data: Box<dyn Data>) -> Self {
         DatabasePlain {
             inner: data,
             waits: HashMap::new(),

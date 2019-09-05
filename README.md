@@ -33,7 +33,7 @@ Run without arguments to start with default configuration or with `--help` to sh
 
 ```
 $ rabbitmq-consumer
-rabbitmq-consumer 0.6.5
+rabbitmq-consumer 0.6.6
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
 
@@ -152,6 +152,10 @@ This section defines the MySQL configuration.
 
 > `retries = 3`
 >> Specify how many retries of MySQL if connection is lost before ending the process
+
+## Environment variables
+You can use environment variables for every configuration of the TOML file just using the `"$VARIABLE_NAME"` syntax as parameter value.
+It's mandatory to use quotes in order to avoid spaced parameters and other issues.
 
 ## Queues and consumers
 There are two ways for configuring queues:
