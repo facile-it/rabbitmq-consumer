@@ -23,6 +23,7 @@ mod consumer;
 mod data;
 mod executor;
 mod logger;
+mod utils;
 
 use std::thread;
 use std::time::Duration;

@@ -104,7 +104,7 @@ impl Message {
                 )
             )
         ).and_then(move |result| {
-            let future: Box<Future<Item = _, Error = _>> = match result {
+            let future: Box<dyn Future<Item = _, Error = _>> = match result {
                 Either::A((output, _timeout)) => {
                     let retry_type = data.borrow_mut().get_retry_type(queue_setting.id);
                     match retry_type {

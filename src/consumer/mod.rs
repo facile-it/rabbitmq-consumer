@@ -53,7 +53,7 @@ pub enum ConsumerResult {
 pub struct Consumer {
     config: Config,
     data: Rc<RefCell<DatabasePlain>>,
-    hooks: Vec<Rc<RefCell<Events>>>,
+    hooks: Vec<Rc<RefCell<dyn Events>>>,
 }
 
 impl Consumer {
