@@ -7,11 +7,13 @@ use std::path::Path;
 
 use toml;
 
-use serde::{de, Deserialize, Deserializer};
-use std::str::FromStr;
+use serde::Deserialize;
 
 use crate::data::models::QueueSetting;
 use crate::logger;
+use crate::utils::bool_or_string;
+use crate::utils::i32_or_string;
+use crate::utils::option_i32_or_string;
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -44,54 +46,6 @@ pub struct DatabaseConfig {
     pub db_name: String,
     #[serde(deserialize_with = "option_i32_or_string", default)]
     pub retries: Option<i32>,
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum BoolOrString {
-    Bool(bool),
-    Str(String),
-}
-pub fn bool_or_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    match BoolOrString::deserialize(deserializer)? {
-        BoolOrString::Bool(v) => Ok(v),
-        BoolOrString::Str(v) => bool::from_str(&v).map_err(de::Error::custom),
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum IntegerOrString {
-    Integer(i32),
-    Str(String),
-}
-pub fn i32_or_string<'de, D>(deserializer: D) -> Result<i32, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    match IntegerOrString::deserialize(deserializer)? {
-        IntegerOrString::Integer(v) => Ok(v),
-        IntegerOrString::Str(v) => i32::from_str(&v).map_err(de::Error::custom),
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum OptionIntegerOrString {
-    Integer(i32),
-    Str(String),
-}
-pub fn option_i32_or_string<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    match i32_or_string(deserializer) {
-        Ok(value) => Ok(Some(value)),
-        _ => Ok(None),
-    }
 }
 
 pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
