@@ -118,7 +118,7 @@ This section (a TOML array) defines all queues and consumers.
 >> The end hour of consumer activity: the consumer will be stopped automatically until the start hour is reached again.
 
 > `count = 1`
->> Specify how many consumers to run for this queue.
+>> Specify how many consumers to run for this queue. WARNING: use multiple counts only on a shared instance, for a container based utilization, is recommended to split the load between replicas or more containers. 
 
 > `retry_wait = 120`
 >> The waiting time for the retry mode: default is 120 (value is in seconds).
@@ -166,6 +166,8 @@ There are two ways for configuring queues:
 In __Database configuration__, you can enable or disable a queue at runtime, change its operation time and consumers count.
 
 You can enable the Database configuration by switching the `enabled` option to `true` in the `[database]` section.
+
+WARNING: If you use the MySQL connection, the consumer can fails more frequently due to the dependency of the MySQL server connection.
 
 When a database configuration is enabled, the consumer will fetch a table named `queues` and will load all the configuration values from there. This is the query for creating the needed table:
 
