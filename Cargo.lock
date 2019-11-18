@@ -669,7 +669,7 @@ dependencies = [
 
 [[package]]
 name = "rabbitmq-consumer"
-version = "0.6.6"
+version = "0.6.7"
 dependencies = [
  "base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
