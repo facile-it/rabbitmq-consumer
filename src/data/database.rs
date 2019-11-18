@@ -32,7 +32,13 @@ impl Database {
         );
 
         MysqlConnection::establish(&database_url)
-            .expect(&format!("Error connecting to {}", database_url))
+            .expect(
+                &format!(
+                    "Error connecting to host {} with db name {}",
+                    config.host,
+                    config.db_name
+                )
+            )
     }
 
     pub fn reconnect(&mut self) {
