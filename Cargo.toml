@@ -25,3 +25,8 @@
     base64 = "^0.9"
     clap = "^2.33"
     crystalsoft-utils = "^0.1"
+
+
+# For static building
+[patch.crates-io]
+    mysqlclient-sys = { git = "https://github.com/chrismoos/mysqlclient-sys", rev = "fd1723f0e25bbe75454022b4ff001cfb34346586" }

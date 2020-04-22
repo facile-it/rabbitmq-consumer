@@ -25,8 +25,6 @@ Just run `cargo build` inside the project folder to build a debug binary.
 
 You can even build a release binary (slower but optimized build) using `cargo build --release`
 
-NB: You need the `libmysqlclient-dev` package (for Ubuntu) or `mysql-client` (for macOS) in order to build and statically link the binary.
-
 ## Usage
 
 Run without arguments to start with default configuration or with `--help` to show the help summary:
