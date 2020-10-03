@@ -1,6 +1,7 @@
-use std::cell::RefCell;
 use std::io::Error;
-use std::rc::Rc;
+use std::sync::Arc;
+
+use async_std::sync::RwLock;
 
 use crate::consumer::{Consumer, ConsumerResult, Events};
 use crate::data::config::Config;
@@ -14,29 +15,28 @@ pub enum ExecutorResult {
 }
 
 pub struct Executor {
-    waiter: Rc<RefCell<Waiter>>,
+    waiter: Arc<RwLock<Waiter>>,
     consumer: Consumer,
 }
 
 impl Executor {
-    pub fn new(config: Config) -> Self {
-        let waiter = Rc::new(RefCell::new(Waiter::new(
+    pub async fn new(config: Config) -> Self {
+        let waiter = Arc::new(RwLock::new(Waiter::new(
             config.rabbit.reconnections.unwrap_or(0),
         )));
 
         let mut consumer = Consumer::new(config);
-        consumer.add_events_hook(waiter.clone());
+        consumer.add_events_hook(waiter.clone()).await;
 
         Executor { waiter, consumer }
     }
 
-    pub fn execute(&mut self) -> ExecutorResult {
+    pub async fn execute(&mut self) -> ExecutorResult {
         match self.consumer.run() {
             Ok(ConsumerResult::CountChanged) => ExecutorResult::Restart,
             Ok(ConsumerResult::GenericOk) => ExecutorResult::Exit,
             Err(e) => {
-                let waiter = self.waiter.borrow();
-                if waiter.is_to_close() {
+                if self.waiter.read().await.is_to_close() {
                     return ExecutorResult::Error(e);
                 }
 

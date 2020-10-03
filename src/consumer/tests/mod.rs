@@ -98,13 +98,13 @@ fn create_config() -> Config {
     config
 }
 
-fn create_data() -> Rc<RefCell<DatabasePlain>> {
+fn create_data() -> Arc<RwLock<DatabasePlain>> {
     let config = create_config();
-    let data = Rc::new(RefCell::new(DatabasePlain::new({
+    let data = Arc::new(RwLock::new(DatabasePlain::new({
         Box::new(Plain::new(config.rabbit.queues.clone()))
     })));
 
-    assert_eq!(data.borrow_mut().get_queues().is_empty(), false);
+    assert_eq!(data.write().await.get_queues().is_empty(), false);
 
     data
 }
@@ -146,7 +146,7 @@ fn channel_queue() {
 
     let future = Consumer::channel(
         result.0,
-        data.borrow_mut().get_queues().get(0).unwrap().to_owned(),
+        data.write().await.get_queues().get(0).unwrap().to_owned(),
         config.rabbit.queue_prefix,
     );
     let result = runtime.block_on(future);
@@ -160,7 +160,8 @@ fn consumer_changed() {
 
     let config = create_config();
     let data = create_data();
-    let mut queue_setting: QueueSetting = data.borrow_mut().get_queues().get(0).unwrap().to_owned();
+    let mut queue_setting: QueueSetting =
+        data.write().await.get_queues().get(0).unwrap().to_owned();
 
     let result = runtime.block_on(connect(create_config())).unwrap();
     let client = result.0;

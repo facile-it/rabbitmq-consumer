@@ -5,17 +5,13 @@ use std::ops::Add;
 use std::process::Command;
 use std::rc::Rc;
 use std::str;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use futures::future::{loop_fn, Either, Future, Loop};
+use async_std::sync::RwLock;
 
-use tokio::net::TcpStream;
-use tokio_current_thread;
-use tokio_process::{CommandExt, OutputAsync};
-use tokio_timer::Delay;
-
-use lapin::channel::Channel;
-use lapin_async::message::Delivery;
+use lapin::message::Delivery;
+use lapin::Channel;
 
 use base64::encode as base64_encode;
 
@@ -27,8 +23,8 @@ pub struct Message;
 
 impl Message {
     pub fn handle_message(
-        data: Rc<RefCell<DatabasePlain>>,
-        channel: Channel<TcpStream>,
+        data: Arc<RwLock<DatabasePlain>>,
+        channel: Channel,
         queue_setting: QueueSetting,
         consumer_index: i32,
         message: Delivery,
@@ -47,7 +43,7 @@ impl Message {
         };
 
         let mut command = {
-            let cmd = data.borrow_mut().get_command(queue_setting.id);
+            let cmd = data.write().await.get_command(queue_setting.id);
             let mut arguments = cmd.split(' ').collect::<VecDeque<&str>>();
             let mut command = Command::new(arguments.pop_front().unwrap());
             let mut additional_arguments = VecDeque::new();
@@ -81,7 +77,7 @@ impl Message {
     }
 
     fn process_message(
-        data: Rc<RefCell<DatabasePlain>>,
+        data: Arc<RwLock<DatabasePlain>>,
         msg: String,
         command: OutputAsync,
         channel: Channel<TcpStream>,
@@ -89,7 +85,7 @@ impl Message {
         consumer_index: i32,
         message: Delivery,
     ) -> impl Future<Item = ConsumerResult, Error = io::Error> + 'static {
-        let timeout = data.borrow_mut().get_command_timeout(queue_setting.id);
+        let timeout = data.write().await.get_command_timeout(queue_setting.id);
 
         let data = data.clone();
         let msg2 = msg.clone();
@@ -106,7 +102,7 @@ impl Message {
         ).and_then(move |result| {
             let future: Box<dyn Future<Item = _, Error = _>> = match result {
                 Either::A((output, _timeout)) => {
-                    let retry_type = data.borrow_mut().get_retry_type(queue_setting.id);
+                    let retry_type = data.write().await.get_retry_type(queue_setting.id);
                     match retry_type {
                         RetryType::Ignored => {
                             logger::log(
@@ -142,7 +138,7 @@ impl Message {
                                             message.delivery_tag,
                                             false
                                         ).and_then(move |_| {
-                                            data.borrow_mut().set_queue_wait(
+                                            data.write().await.set_queue_wait(
                                                 queue_setting.id,
                                                 queue_setting.retry_wait,
                                                 consumer_index,
@@ -169,7 +165,7 @@ impl Message {
                                             message.delivery_tag,
                                             true
                                         ).and_then(move |_| {
-                                            let ms = data.borrow_mut().get_queue_wait(
+                                            let ms = data.write().await.get_queue_wait(
                                                 queue_setting.id,
                                                 consumer_index
                                             );
@@ -188,7 +184,7 @@ impl Message {
                                                 queue_setting.clone(),
                                                 consumer_index
                                             ).then(move |_| {
-                                                data.borrow_mut().set_queue_wait(
+                                                data.write().await.set_queue_wait(
                                                     queue_setting.id,
                                                     ms,
                                                     consumer_index,
@@ -270,12 +266,12 @@ impl Message {
     }
 
     fn wait_db(
-        data: Rc<RefCell<DatabasePlain>>,
+        data: Arc<RwLock<DatabasePlain>>,
         queue_setting: QueueSetting,
         consumer_index: i32,
     ) -> impl Future<Item = (), Error = io::Error> + 'static {
         loop_fn((), move |_| {
-            let wait_ms = if !data.borrow_mut().is_enabled(queue_setting.id) {
+            let wait_ms = if !data.write().await.is_enabled(queue_setting.id) {
                 0
             } else {
                 let waiting = data
@@ -285,7 +281,7 @@ impl Message {
                     - DEFAULT_WAIT_PART as i64;
 
                 if waiting <= 0 {
-                    data.borrow_mut().set_queue_wait(
+                    data.write().await.set_queue_wait(
                         queue_setting.id,
                         queue_setting.retry_wait,
                         consumer_index,
@@ -294,7 +290,7 @@ impl Message {
 
                     0
                 } else {
-                    data.borrow_mut().set_queue_wait(
+                    data.write().await.set_queue_wait(
                         queue_setting.id,
                         waiting as u64,
                         consumer_index,

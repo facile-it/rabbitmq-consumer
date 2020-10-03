@@ -1,23 +1,7 @@
-#![type_length_limit = "33554432"]
-extern crate env_logger;
-extern crate futures;
-extern crate lapin_async;
-extern crate lapin_futures as lapin;
-extern crate serde;
-extern crate tokio;
-extern crate tokio_current_thread;
-extern crate tokio_io;
-extern crate tokio_process;
-extern crate tokio_signal;
-extern crate tokio_timer;
-extern crate toml;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate diesel;
-extern crate base64;
-extern crate chrono;
-extern crate clap;
 
 mod consumer;
 mod data;
@@ -30,9 +14,12 @@ use std::time::Duration;
 
 use clap::{App, Arg};
 
+use tokio::prelude::*;
+
 use crate::executor::{Executor, ExecutorResult};
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author("Dario Cancelliere <dario.cancelliere@facile.it>")
@@ -54,10 +41,11 @@ fn main() {
     let mut executor = Executor::new(data::config::config_loader(
         matches.value_of("env"),
         matches.value_of("path"),
-    ));
+    ))
+    .await;
 
     loop {
-        match executor.execute() {
+        match executor.execute().await {
             ExecutorResult::Restart => logger::log("Consumer count changed, restarting..."),
             ExecutorResult::Wait(error, waiting) => {
                 logger::log(&format!(

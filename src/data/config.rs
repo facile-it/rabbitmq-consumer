@@ -25,7 +25,7 @@ pub struct Config {
 pub struct RabbitConfig {
     pub host: String,
     #[serde(deserialize_with = "i32_or_string")]
-    pub port: i32,
+    pub port: u16,
     pub username: String,
     pub password: String,
     pub vhost: String,
@@ -48,11 +48,11 @@ pub struct DatabaseConfig {
     pub retries: Option<i32>,
 }
 
-pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
+pub fn config_loader<S: AsRef<str>>(environment: Option<S>, path: Option<S>) -> Config {
     let default = "local";
 
     let path = match path {
-        Some(path) => format!("{}/", path),
+        Some(path) => format!("{}/", path.as_ref()),
         None => "config/".into(),
     };
 
@@ -60,7 +60,7 @@ pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
         "{}config_{}.toml",
         path,
         match environment {
-            Some(env) => env,
+            Some(env) => env.as_ref(),
             None => default,
         }
     );
@@ -75,17 +75,9 @@ pub fn config_loader(environment: Option<&str>, path: Option<&str>) -> Config {
         }
     };
 
-    let path = Path::new(&config);
-    let display = path.display();
-    let mut file = match File::open(&path) {
-        Err(why) => panic!("Couldn't open {}: {}", display, why.description()),
-        Ok(file) => file,
-    };
-
-    let mut configuration = String::new();
-    match file.read_to_string(&mut configuration) {
-        Err(why) => panic!("Couldn't read {}: {}", display, why.description()),
-        Ok(_) => {
+    match crystalsoft_utils::read_file_string(config) {
+        Err(why) => panic!("Couldn't read {}: {}", path.as_ref(), why.description()),
+        Ok(mut configuration) => {
             logger::log(format!("{} loaded correctly.", display));
 
             let variables: HashMap<_, _> = env::vars().collect();

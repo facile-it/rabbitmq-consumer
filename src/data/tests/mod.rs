@@ -45,13 +45,13 @@ fn address() {
 #[test]
 fn waits() {
     let config = data::config::config_loader(None, None);
-    let data = Rc::new(RefCell::new(DatabasePlain::new({
+    let data = Arc::new(RwLock::new(DatabasePlain::new({
         Box::new(Plain::new(config.rabbit.queues.clone()))
     })));
 
     const TEST_WAIT: u64 = 120;
 
-    let mut data = data.borrow_mut();
+    let mut data = data.write().await;
     for queue in config.rabbit.queues {
         for consumer_index in 0..queue.count {
             assert_eq!(
@@ -149,11 +149,11 @@ fn retry_type() {
         },
     ];
 
-    let data = Rc::new(RefCell::new(DatabasePlain::new({
+    let data = Arc::new(RwLock::new(DatabasePlain::new({
         Box::new(Plain::new(queues.clone()))
     })));
 
-    let mut data = data.borrow_mut();
+    let mut data = data.write().await;
     for queue in queues {
         match data.get_retry_type(queue.id) {
             RetryType::Ignored => {
