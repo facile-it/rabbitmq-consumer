@@ -10,6 +10,7 @@
 
 [dependencies]
     async-std = "^1.6"
+    async-trait = "^0.1"
     tokio = { version = "^0.2", features = ["full"] }
     futures = "^0.3"
     lapin = "^1.2"

@@ -1,31 +1,31 @@
 [rabbit]
-host = "localhost"
-port = 5672
-username = "guest"
-password = "guest"
-vhost = "/"
-queue_prefix = "queue_"
-reconnections = 0
+    host = "localhost"
+    port = 5672
+    username = "guest"
+    password = "guest"
+    vhost = "/"
+    queue_prefix = "queue_"
+    reconnections = 0
 
 [[rabbit.queues]]
-id = 1
-queue_name = "example"
-consumer_name = "example"
-command = "echo 1"
-command_timeout = 30
-base64 = false
-start_hour = "00:00:00"
-end_hour = "23:59:59"
-count = 1
-retry_wait = 120
-retry_mode = "incremental"
-enabled = true
+    id = 1
+    queue_name = "example"
+    consumer_name = "example"
+    command = "echo 1"
+    command_timeout = 30
+    base64 = false
+    start_hour = "00:00:00"
+    end_hour = "23:59:59"
+    count = 1
+    retry_wait = 120
+    retry_mode = "incremental"
+    enabled = true
 
 [database]
-enabled = false
-host = ""
-port = 3306
-user = ""
-password = ""
-db_name = ""
-retries = 3
+    enabled = false
+    host = ""
+    port = 3306
+    user = ""
+    password = ""
+    db_name = ""
+    retries = 3
