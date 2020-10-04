@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use async_std::sync::RwLock;
 
-use crate::client::consumer::{Consumer, ConsumerResult};
+use crate::client::consumer::{Consumer, ConsumerError, ConsumerResult};
 use crate::client::executor::events::EventsHandler;
 use crate::client::executor::waiter::Waiter;
 use crate::config::Config;
@@ -14,9 +14,9 @@ use crate::config::Config;
 #[derive(Debug)]
 pub enum ExecutorResult {
     Restart,
-    Wait(Box<dyn Error>, u64),
+    Wait(ConsumerError, u64),
     Exit,
-    Error(Box<dyn Error>),
+    Error(ConsumerError),
 }
 
 pub struct Executor {

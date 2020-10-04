@@ -31,7 +31,7 @@ impl Waiter {
 }
 
 impl Events for Waiter {
-    fn on_connect(&mut self, _host: &str, _port: i32) {
+    fn on_connect(&mut self, _host: &str, _port: u16) {
         self.waiting = Self::LOOP_WAIT;
         self.waiting_times = 0;
     }
