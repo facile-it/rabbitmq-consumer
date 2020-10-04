@@ -24,6 +24,7 @@ use crate::config::queue::Queue;
 use crate::config::Config;
 use crate::logger;
 use diesel::QueryDsl;
+use tokio::stream::StreamExt;
 
 const CONSUMER_WAIT: u64 = 60000;
 const DEFAULT_WAIT_PART: u64 = 1000;
@@ -163,13 +164,13 @@ impl Consumer {
             .await;
 
         match consumer {
-            Ok(consumer) => {
+            Ok(mut consumer) => {
                 logger::log(format!(
                     "[{}] Consumer #{} declared \"{}\"",
                     queue_config.queue_name, index, consumer_name
                 ));
 
-                for delivery in consumer {
+                while let Some(delivery) = (consumer.next()).await {
                     match delivery {
                         Ok((channel, delivery)) => {
                             let is_changed = self
