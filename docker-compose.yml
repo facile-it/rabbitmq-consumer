@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  consumer:
+    build: docker/images/consumer
+    container_name: consumer
+    working_dir: /home
+    volumes:
+      - "./config/config.toml:/home/config/config.toml"
+      - "./target/debug/rabbitmq-consumer:/home/rabbitmq-consumer"
+      - "./docker/scripts/pdfiller/start.sh:/home/rabbitmq-consumer.sh"
+      - "./logs:/home/logs"
+    ulimits:
+      nproc: 1000000
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    env_file: .env
+    command: >
+      /bin/sh -c "chmod a+x rabbitmq-consumer && chmod a+x rabbitmq-consumer.sh && ./rabbitmq-consumer.sh"
+    restart: always
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    build: ./docker/images/rabbitmq
+    container_name: rabbitmq
+    expose:
+      - $CONSUMER_PORT
+    ports:
+      - $CONSUMER_PUBLIC_PORT:$CONSUMER_PORT

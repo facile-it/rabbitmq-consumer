@@ -80,7 +80,7 @@ impl Consumer {
 
                 logger::log("Managing queues...");
 
-                let queues = self.queue.read().await.get_queues();
+                let queues = self.queue.write().await.get_queues();
                 if queues.is_empty() {
                     panic!("Can't load consumers due to empty queues");
                 }
@@ -88,26 +88,23 @@ impl Consumer {
                 let mut futures = Vec::new();
                 for queue in queues.into_iter() {
                     for index in 0..queue.count {
-                        futures.push(
-                            async {
-                                match Channel::get_queue(
-                                    connection.clone(),
-                                    queue.clone(),
-                                    self.config.rabbit.queue_prefix.clone(),
-                                )
-                                .await
-                                {
-                                    Ok((channel, queue)) => {
-                                        self.consume(index, channel, queue).await
-                                    }
-                                    Err(e) => Err(ConsumerError::ChannelError(e)),
-                                }
-                            }
-                            .boxed(),
-                        );
-                    }
+                        let future = match Channel::get_queue(
+                            connection.clone(),
+                            queue.clone(),
+                            self.config.rabbit.queue_prefix.clone(),
+                        )
+                        .await
+                        {
+                            Ok((c, q)) => {
+                                logger::log(format!("[{}] Queue created", queue.queue_name));
 
-                    logger::log(format!("[{}] Queue created", queue.queue_name));
+                                self.consume(index, c, q).await
+                            }
+                            Err(e) => Err(ConsumerError::ChannelError(e)),
+                        };
+
+                        futures.push(async { future }.boxed());
+                    }
                 }
 
                 futures.push(sigint.boxed());

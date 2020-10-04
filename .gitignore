@@ -1,5 +1,7 @@
 .idea
 /target/
+/logs
 **/*.rs.bk
 config/config.toml
 old
+.env
