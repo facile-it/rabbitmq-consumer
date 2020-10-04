@@ -117,8 +117,9 @@ impl Message {
         let (res, _, _) = select_all(vec![timeout.boxed(), output.boxed()]).await;
         match res {
             CommandResult::Output(output) => {
+                let retry_type = self.queue.write().await.get_retry_type(queue_config.id);
                 match output {
-                    Ok(output) => match self.queue.write().await.get_retry_type(queue_config.id) {
+                    Ok(output) => match retry_type {
                         RetryType::Ignored => {
                             logger::log(
                                 &format!(
@@ -263,7 +264,8 @@ impl Message {
 
     async fn wait_db(&self, index: i32, queue_config: &QueueConfig) {
         while let Some(_) = async {
-            if self.queue.write().await.is_enabled(queue_config.id) {
+            let is_enabled = self.queue.write().await.is_enabled(queue_config.id);
+            if is_enabled {
                 let waiting = self
                     .queue
                     .write()
