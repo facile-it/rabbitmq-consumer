@@ -8,6 +8,7 @@ use crate::config::database::schema::queues;
 use crate::config::queue::config::QueueConfig;
 use crate::config::queue::model::QueueModel;
 use crate::config::DatabaseConfig;
+use crate::logger;
 
 pub struct Database {
     pub pool: Pool<ConnectionManager<MysqlConnection>>,
@@ -35,9 +36,15 @@ impl Database {
             config.db_name
         );
 
+        logger::log(&format!(
+            "Connecting to MySQL at {}:{}...",
+            config.host,
+            config.port.unwrap_or(Self::DEFAULT_PORT)
+        ));
+
         let manager = ConnectionManager::<MysqlConnection>::new(database_url);
         Pool::builder().build(manager).expect(&format!(
-            "Error connecting to host {} with db name {}",
+            "Error connecting to host {} with db name {}.",
             config.host, config.db_name
         ))
     }

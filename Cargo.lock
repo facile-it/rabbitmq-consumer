@@ -507,7 +507,7 @@ dependencies = [
  "futures-sink 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-task 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "memchr 2.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pin-project 0.4.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pin-project 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "pin-utils 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro-hack 0.5.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro-nested 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -620,7 +620,7 @@ dependencies = [
 
 [[package]]
 name = "lapin"
-version = "1.2.8"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "amq-protocol 6.0.0-rc12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -932,15 +932,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "pin-project"
-version = "0.4.25"
+version = "0.4.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "pin-project-internal 0.4.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pin-project-internal 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "pin-project-internal"
-version = "0.4.25"
+version = "0.4.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 1.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1043,7 +1043,7 @@ dependencies = [
  "diesel 1.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "lapin 1.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lapin 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.116 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.116 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple-cache 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1652,7 +1652,7 @@ dependencies = [
 "checksum js-sys 0.3.45 (registry+https://github.com/rust-lang/crates.io-index)" = "ca059e81d9486668f12d455a4ea6daa600bd408134cd17e3d3fb5a32d1f016f8"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum kv-log-macro 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "0de8b303297635ad57c9f5059fd9cee7a47f8e8daa09df0fcd07dd39fb22977f"
-"checksum lapin 1.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0047ccf3b150ff99158931f7e38d476c1e0251178cee776b096e6b0697d888b0"
+"checksum lapin 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e044d3d36b71f5f76cc3b73b5485e166f3f13355f73f46bf619d6f7794b2acc0"
 "checksum lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 "checksum lexical-core 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)" = "db65c6da02e61f55dae90a0ae427b2a5f6b3e8db09f58d10efab23af92592616"
 "checksum libc 0.2.78 (registry+https://github.com/rust-lang/crates.io-index)" = "aa7087f49d294270db4e1928fc110c976cd4b9e5a16348e0a1df09afa99e6c98"
@@ -1686,8 +1686,8 @@ dependencies = [
 "checksum pem 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "59698ea79df9bf77104aefd39cc3ec990cb9693fb59c3b0a70ddf2646fdffb4b"
 "checksum percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 "checksum percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
-"checksum pin-project 0.4.25 (registry+https://github.com/rust-lang/crates.io-index)" = "2b9e280448854bd91559252582173b3bd1f8e094a0e644791c0628ca9b1f144f"
-"checksum pin-project-internal 0.4.25 (registry+https://github.com/rust-lang/crates.io-index)" = "c8c8b352676bc6a4c3d71970560b913cea444a7a921cc2e2d920225e4b91edaa"
+"checksum pin-project 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)" = "13fbdfd6bdee3dc9be46452f86af4a4072975899cf8592466668620bebfbcc17"
+"checksum pin-project-internal 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)" = "c82fb1329f632c3552cf352d14427d57a511b1cf41db93b3a7d77906a82dcc8e"
 "checksum pin-project-lite 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "e555d9e657502182ac97b539fb3dae8b79cda19e3e4f8ffb5e8de4f18df93c95"
 "checksum pin-utils 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 "checksum pinky-swear 4.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9bf8cda6f8e1500338634e4e3ce90ac59eb7929a1e088b6946c742be1cc44dc1"

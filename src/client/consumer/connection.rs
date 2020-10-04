@@ -6,6 +6,7 @@ use lapin::{
 };
 
 use crate::config::RabbitConfig;
+use crate::logger;
 
 #[derive(Debug, Clone)]
 pub enum ConnectionError {
@@ -28,6 +29,11 @@ impl Connection {
 
     pub async fn get_connection(&mut self) -> Result<Arc<LapinConnection>, ConnectionError> {
         if self.lapin.is_err() {
+            logger::log(&format!(
+                "Connecting to RabbitMQ at {}:{}...",
+                self.config.host, self.config.port
+            ));
+
             match LapinConnection::connect_uri(
                 AMQPUri {
                     scheme: Default::default(),

@@ -30,6 +30,7 @@ const DEFAULT_WAIT_PART: u64 = 1000;
 
 #[derive(Debug, PartialEq)]
 pub enum ConsumerResult {
+    ConsumerChanged,
     CountChanged,
     GenericOk,
     Killed,
@@ -37,7 +38,6 @@ pub enum ConsumerResult {
 
 #[derive(Debug)]
 pub enum ConsumerError {
-    ConsumerChanged,
     LapinError(LapinError),
     IoError(std::io::Error),
     ConnectionError(ConnectionError),
@@ -55,11 +55,6 @@ pub struct Consumer {
 
 impl Consumer {
     pub fn new(config: Config) -> Self {
-        logger::log(&format!(
-            "Connection to {}:{}",
-            config.rabbit.host, config.rabbit.port
-        ));
-
         let queue = Arc::new(RwLock::new(Queue::new({
             if config.database.enabled {
                 Box::new(Database::new(config.database.clone()))
@@ -194,8 +189,6 @@ impl Consumer {
                                     .handle_message(index, &queue_config, &channel, delivery)
                                     .await
                                     .map_err(|e| ConsumerError::MessageError(e))?;
-                            } else {
-                                return Err(ConsumerError::ConsumerChanged);
                             }
 
                             if !is_enabled {
@@ -238,6 +231,8 @@ impl Consumer {
                                         index
                                     )
                                 );
+
+                                return Ok(ConsumerResult::ConsumerChanged);
                             } else if is_changed {
                                 logger::log(&format!(
                                     "[{}] Consumers count changed, messages recovered...",

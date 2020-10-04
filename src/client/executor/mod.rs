@@ -37,6 +37,7 @@ impl Executor {
     pub async fn execute(&mut self) -> ExecutorResult {
         match self.consumer.run().await {
             Ok(ConsumerResult::CountChanged) => ExecutorResult::Restart,
+            Ok(ConsumerResult::ConsumerChanged) => ExecutorResult::Restart,
             Ok(ConsumerResult::GenericOk) => ExecutorResult::Exit,
             Ok(ConsumerResult::Killed) => ExecutorResult::Killed,
             Err(e) => {

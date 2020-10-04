@@ -36,6 +36,11 @@ pub enum CommandResult {
     Output(io::Result<Output>),
 }
 
+struct MessageCommand {
+    command: Command,
+    human: String,
+}
+
 pub struct Message {
     queue: Arc<RwLock<Queue>>,
 }
@@ -69,30 +74,38 @@ impl Message {
             }
         };
 
-        let command = {
+        let message_command = {
             let cmd = self.queue.write().await.get_command(queue_config.id);
+            let mut human_command = cmd.clone();
             let mut arguments = cmd.split(' ').collect::<VecDeque<&str>>();
             let mut command = Command::new(arguments.pop_front().unwrap());
             let mut additional_arguments = VecDeque::new();
             if queue_config.base64 {
+                human_command.push_str(&format!(" --body {}", msg));
+
                 additional_arguments.push_back("--body");
                 additional_arguments.push_back(msg.as_str());
             } else {
+                human_command.push_str(&format!(" {}", msg));
+
                 additional_arguments.extend(msg.split(' ').collect::<VecDeque<&str>>());
             }
 
             arguments.append(&mut additional_arguments);
             command.args(arguments);
 
-            command
+            MessageCommand {
+                command,
+                human: human_command,
+            }
         };
 
         logger::log(&format!(
-            "[{}] Executing command on consumer #{}: {:?}",
-            queue_config.queue_name, index, command
+            "[{}] Executing command \"{}\" on consumer #{}",
+            queue_config.queue_name, message_command.human, index
         ));
 
-        self.process_message(index, queue_config, msg, command, channel, delivery)
+        self.process_message(index, queue_config, msg, message_command, channel, delivery)
             .await
     }
 
@@ -101,7 +114,7 @@ impl Message {
         index: i32,
         queue_config: &QueueConfig,
         msg: String,
-        mut command: Command,
+        mut message_command: MessageCommand,
         channel: &Channel,
         delivery: Delivery,
     ) -> Result<MessageResult, MessageError> {
@@ -112,7 +125,10 @@ impl Message {
                 .get_command_timeout(queue_config.id),
         )
         .map(|_| CommandResult::Timeout);
-        let output = command.output().map(|output| CommandResult::Output(output));
+        let output = message_command
+            .command
+            .output()
+            .map(|output| CommandResult::Output(output));
 
         let (res, _, _) = select_all(vec![timeout.boxed(), output.boxed()]).await;
         match res {
@@ -123,9 +139,9 @@ impl Message {
                         RetryType::Ignored => {
                             logger::log(
                                 &format!(
-                                    "[{}] Command {} executed on consumer #{} and result ignored, message removed.",
+                                    "[{}] Command \"{}\" executed on consumer #{} and result ignored, message removed.",
                                     queue_config.queue_name,
-                                    msg,
+                                    message_command.human,
                                     index
                                 )
                             );
@@ -141,8 +157,8 @@ impl Message {
                         _ => match output.status.code().unwrap_or(NEGATIVE_ACKNOWLEDGEMENT) {
                             ACKNOWLEDGEMENT => {
                                 logger::log(&format!(
-                                    "[{}] Command {} succeeded on consumer #{}, message removed.",
-                                    queue_config.queue_name, msg, index
+                                    "[{}] Command \"{}\" succeeded on consumer #{}, message removed.",
+                                    queue_config.queue_name, message_command.human, index
                                 ));
 
                                 channel
@@ -163,9 +179,9 @@ impl Message {
                             NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE => {
                                 logger::log(
                                     &format!(
-                                        "[{}] Command {} failed on consumer #{}, message rejected and requeued. Output:\n{:#?}",
+                                        "[{}] Command \"{}\" failed on consumer #{}, message rejected and requeued. Output:\n{:#?}",
                                         queue_config.queue_name,
-                                        msg,
+                                        message_command.human,
                                         index,
                                         output
                                     )
@@ -202,9 +218,9 @@ impl Message {
                             _ => {
                                 logger::log(
                                     &format!(
-                                        "[{}] Command {} failed on consumer #{}, message rejected. Output:\n{:#?}",
+                                        "[{}] Command \"{}\" failed on consumer #{}, message rejected. Output:\n{:#?}",
                                         queue_config.queue_name,
-                                        msg,
+                                        message_command.human,
                                         index,
                                         output
                                     )
@@ -222,10 +238,10 @@ impl Message {
                     },
                     Err(e) => {
                         logger::log(&format!(
-                            "[{}] Error {:?} executing the command ({:?}) on consumer #{}, message {:#?} rejected...",
-                            e,
+                            "[{}] Error {:?} executing the command \"{}\" on consumer #{}, message \"{}\" rejected...",
                             queue_config.queue_name,
-                            msg,
+                            e,
+                            message_command.human,
                             index,
                             msg
                         ));
@@ -245,8 +261,9 @@ impl Message {
             CommandResult::Timeout => {
                 logger::log(
                     &format!(
-                        "[{}] Timeout occurred executing the command on consumer #{}, message {:#?} rejected and requeued...",
+                        "[{}] Timeout occurred executing the command \"{}\" on consumer #{}, message \"{}\" rejected and requeued...",
                         queue_config.queue_name,
+                        message_command.human,
                         index,
                         msg
                     )
