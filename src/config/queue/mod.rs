@@ -1,23 +1,16 @@
 pub mod config;
-pub mod database;
-pub mod models;
-pub mod plain;
-mod schema;
-
-#[cfg(test)]
-mod tests;
+pub mod model;
 
 use std::collections::HashMap;
 
-use chrono;
+use crate::config::queue::config::QueueConfig;
+use crate::config::queue::model::QueueModel;
 
-use self::models::QueueSetting;
+pub const TIME_MS_MULTIPLIER: u64 = 1000;
+pub const TIME_S_MULTIPLIER: u64 = 60;
 
-const TIME_MS_MULTIPLIER: u64 = 1000;
-const TIME_S_MULTIPLIER: u64 = 60;
-
-const DEFAULT_WAIT: u64 = 120;
-const DEFAULT_TIMEOUT: u64 = 30;
+pub const DEFAULT_WAIT: u64 = 120;
+pub const DEFAULT_TIMEOUT: u64 = 30;
 
 pub enum RetryType {
     Static,
@@ -31,64 +24,20 @@ pub enum RetryMode {
     Forced,
 }
 
-pub trait Data {
-    fn get_queues(&mut self) -> Vec<QueueSetting>;
-    fn get_queue(&mut self, id: i32) -> Option<QueueSetting>;
-
-    fn get_command(&mut self, id: i32) -> String {
-        match self.get_queue(id) {
-            Some(queue) => queue.command,
-            None => String::new(),
-        }
-    }
-
-    fn get_command_timeout(&mut self, id: i32) -> u64 {
-        (match self.get_queue(id) {
-            Some(queue) => queue.command_timeout.unwrap_or(DEFAULT_TIMEOUT),
-            None => DEFAULT_TIMEOUT,
-        } * TIME_S_MULTIPLIER)
-            * TIME_MS_MULTIPLIER
-    }
-
-    fn is_enabled(&mut self, id: i32) -> bool {
-        match self.get_queue(id) {
-            Some(queue) => {
-                let now = Some(chrono::Local::now().naive_local().time());
-
-                queue.enabled && {
-                    if queue.start_hour.is_some() && queue.end_hour.is_some() {
-                        queue.start_hour.le(&now) && queue.end_hour.ge(&now)
-                    } else {
-                        true
-                    }
-                }
-            }
-            None => false,
-        }
-    }
-
-    fn is_changed(&mut self, id: i32, current_count: i32) -> bool {
-        match self.get_queue(id) {
-            Some(p) => p.count != current_count,
-            None => false,
-        }
-    }
-}
-
-pub struct DatabasePlain {
-    inner: Box<dyn Data>,
+pub struct Queue {
+    inner: Box<dyn QueueModel>,
     waits: HashMap<(i32, i32), u64>,
 }
 
-impl DatabasePlain {
-    pub fn new(data: Box<dyn Data>) -> Self {
-        DatabasePlain {
+impl Queue {
+    pub fn new(data: Box<dyn QueueModel>) -> Self {
+        Queue {
             inner: data,
             waits: HashMap::new(),
         }
     }
 
-    pub fn get_queues(&mut self) -> Vec<QueueSetting> {
+    pub fn get_queues(&mut self) -> Vec<QueueConfig> {
         self.inner.get_queues()
     }
 

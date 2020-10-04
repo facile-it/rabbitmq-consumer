@@ -1,9 +1,12 @@
+mod schema;
+
 use diesel::mysql::MysqlConnection;
 use diesel::prelude::*;
 
-use crate::data::models::QueueSetting;
-use crate::data::schema::queues;
-use crate::data::{config::DatabaseConfig, Data};
+use crate::config::database::schema::queues;
+use crate::config::queue::config::QueueConfig;
+use crate::config::queue::model::QueueModel;
+use crate::config::DatabaseConfig;
 
 pub struct Database {
     pub connection: MysqlConnection,
@@ -31,14 +34,10 @@ impl Database {
             config.db_name
         );
 
-        MysqlConnection::establish(&database_url)
-            .expect(
-                &format!(
-                    "Error connecting to host {} with db name {}",
-                    config.host,
-                    config.db_name
-                )
-            )
+        MysqlConnection::establish(&database_url).expect(&format!(
+            "Error connecting to host {} with db name {}",
+            config.host, config.db_name
+        ))
     }
 
     pub fn reconnect(&mut self) {
@@ -46,10 +45,10 @@ impl Database {
     }
 }
 
-impl Data for Database {
-    fn get_queues(&mut self) -> Vec<QueueSetting> {
+impl QueueModel for Database {
+    fn get_queues(&mut self) -> Vec<QueueConfig> {
         for i in 1..self.config.retries.unwrap_or(Self::DEFAULT_RETRIES) {
-            match queues::dsl::queues.load::<QueueSetting>(&self.connection) {
+            match queues::dsl::queues.load::<QueueConfig>(&self.connection) {
                 Ok(rs) => return rs,
                 Err(e) => {
                     if i == 1 {
@@ -64,12 +63,12 @@ impl Data for Database {
         vec![]
     }
 
-    fn get_queue(&mut self, id: i32) -> Option<QueueSetting> {
+    fn get_queue(&mut self, id: i32) -> Option<QueueConfig> {
         for i in 1..self.config.retries.unwrap_or(Self::DEFAULT_RETRIES) {
             match queues::dsl::queues
                 .filter(queues::dsl::id.eq(id))
                 .limit(1)
-                .get_result::<QueueSetting>(&self.connection)
+                .get_result::<QueueConfig>(&self.connection)
             {
                 Ok(c) => {
                     return Some(c);
