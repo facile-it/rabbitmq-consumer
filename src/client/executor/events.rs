@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use async_std::sync::RwLock;
+use async_std::sync::{Arc, RwLock};
 
 #[allow(unused_variables)]
 pub trait Events: Send + Sync {

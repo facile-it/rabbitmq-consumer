@@ -1,6 +1,6 @@
-mod database;
-mod file;
-mod queue;
+pub mod database;
+pub mod file;
+pub mod queue;
 
 use std::collections::HashMap;
 use std::env;

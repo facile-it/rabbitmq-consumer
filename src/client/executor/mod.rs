@@ -1,10 +1,7 @@
 pub mod events;
 mod waiter;
 
-use std::error::Error;
-use std::sync::Arc;
-
-use async_std::sync::RwLock;
+use async_std::sync::{Arc, RwLock};
 
 use crate::client::consumer::{Consumer, ConsumerError, ConsumerResult};
 use crate::client::executor::events::EventsHandler;

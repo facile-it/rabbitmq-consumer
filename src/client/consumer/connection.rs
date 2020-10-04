@@ -1,8 +1,7 @@
-use std::sync::Arc;
+use async_std::sync::Arc;
 
 use lapin::{
-    options::*, publisher_confirm::Confirmation, types::FieldTable, uri::AMQPAuthority,
-    uri::AMQPUri, uri::AMQPUserInfo, BasicProperties, Connection as LapinConnection,
+    uri::AMQPAuthority, uri::AMQPUri, uri::AMQPUserInfo, Connection as LapinConnection,
     ConnectionProperties, Error,
 };
 

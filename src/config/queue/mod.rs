@@ -30,9 +30,9 @@ pub struct Queue {
 }
 
 impl Queue {
-    pub fn new(data: Box<dyn QueueModel>) -> Self {
+    pub fn new(model: Box<dyn QueueModel>) -> Self {
         Queue {
-            inner: data,
+            inner: model,
             waits: HashMap::new(),
         }
     }
