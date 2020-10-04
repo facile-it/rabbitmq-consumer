@@ -11,7 +11,7 @@ pub enum MessageError {
 pub struct Message {}
 
 impl Message {
-    pub async fn handle_message(channel: Channel, delivery: Delivery) -> Result<(), MessageError> {
+    pub async fn handle_message(channel: &Channel, delivery: Delivery) -> Result<(), MessageError> {
         // info!("received message: {:?}", delivery);
         // if let Ok((channel, delivery)) = delivery {
         //     channel

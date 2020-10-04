@@ -10,7 +10,7 @@ use tokio::time::{delay_for, Duration};
 use futures::future::select_all;
 use futures::future::FutureExt;
 
-use lapin::options::BasicConsumeOptions;
+use lapin::options::{BasicCancelOptions, BasicConsumeOptions, BasicRecoverOptions};
 use lapin::{types::FieldTable, Channel as LapinChannel, Error as LapinError, Queue as LapinQueue};
 
 use crate::client::consumer::channel::{Channel, ChannelError};
@@ -150,6 +150,13 @@ impl Consumer {
     ) -> Result<ConsumerResult, ConsumerError> {
         let consumer_name = format!("{}_consumer_{}", queue_config.consumer_name, index);
 
+        if !self.queue.write().await.is_enabled(queue_config.id) {
+            logger::log(format!(
+                "[{}] Consumer #{} with \"{}\" not enabled, waiting...",
+                queue_config.queue_name, index, consumer_name
+            ));
+        }
+
         self.check_consumer(&queue_config).await;
 
         let consumer = channel
@@ -170,7 +177,7 @@ impl Consumer {
                     queue_config.queue_name, index, consumer_name
                 ));
 
-                while let Some(delivery) = (consumer.next()).await {
+                while let Some(delivery) = consumer.next().await {
                     match delivery {
                         Ok((channel, delivery)) => {
                             let is_changed = self
@@ -181,18 +188,74 @@ impl Consumer {
                             let is_enabled = self.queue.write().await.is_enabled(queue_config.id);
 
                             if !is_changed && is_enabled {
-                                Message::handle_message(channel, delivery)
+                                Message::handle_message(&channel, delivery)
                                     .await
                                     .map_err(|e| ConsumerError::MessageError(e))?;
                             } else {
                                 return Err(ConsumerError::ConsumerChanged);
                             }
+
+                            if !is_enabled {
+                                if !is_changed {
+                                    if let Err(_) = channel
+                                        .basic_cancel(
+                                            &consumer_name,
+                                            BasicCancelOptions { nowait: false },
+                                        )
+                                        .await
+                                    {
+                                        logger::log(&format!(
+                                            "[{}] Error canceling the consumer #{}, returning...",
+                                            queue_config.queue_name, index
+                                        ));
+                                    } else {
+                                        Self::wait(DEFAULT_WAIT_PART).await;
+                                    }
+                                }
+
+                                if let Err(_) = channel
+                                    .basic_recover(BasicRecoverOptions { requeue: true })
+                                    .await
+                                {
+                                    logger::log(
+                                        &format!(
+                                            "[{}] Error recovering message for consumer #{}, message is not ackable...",
+                                            queue_config.queue_name,
+                                            index
+                                        )
+                                    );
+
+                                    return Ok(ConsumerResult::GenericOk);
+                                }
+
+                                logger::log(
+                                    &format!(
+                                        "[{}] Consumer #{} not active, messages recovered and consumer canceled...",
+                                        queue_config.queue_name,
+                                        index
+                                    )
+                                );
+                            } else if is_changed {
+                                logger::log(&format!(
+                                    "[{}] Consumers count changed, messages recovered...",
+                                    queue_config.queue_name
+                                ));
+
+                                return Ok(ConsumerResult::CountChanged);
+                            }
                         }
                         Err(e) => {
+                            logger::log(format!(
+                                "[{}] Error getting messages.",
+                                queue_config.queue_name
+                            ));
+
                             return Err(ConsumerError::LapinError(e));
                         }
                     }
                 }
+
+                logger::log("Messages has been processed.");
 
                 Ok(ConsumerResult::GenericOk)
             }
@@ -201,20 +264,15 @@ impl Consumer {
     }
 
     async fn check_consumer(&self, queue_config: &QueueConfig) {
-        loop {
-            let wait_ms = if self.queue.write().await.is_enabled(queue_config.id) {
-                0
+        while let Some(_) = async {
+            if !self.queue.write().await.is_enabled(queue_config.id) {
+                Some(Self::wait(CONSUMER_WAIT).await)
             } else {
-                // Sleep 2 minutes (60000 milliseconds) each DB check
-                CONSUMER_WAIT
-            };
-
-            Self::wait(wait_ms).await;
-
-            if wait_ms == 0 {
-                break;
+                None
             }
         }
+        .await
+        {}
     }
 
     async fn wait(millis: u64) {
