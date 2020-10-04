@@ -1,2 +1,2 @@
-FROM rabbitmq:latest
+FROM rabbitmq:management
 LABEL maintainer='emulator@hotmail.it'
