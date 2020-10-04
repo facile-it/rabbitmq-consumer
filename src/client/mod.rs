@@ -1,17 +1,17 @@
 mod consumer;
 mod executor;
 
-use std::error::Error;
 use std::thread;
 use std::time::Duration;
 
+use crate::client::consumer::ConsumerError;
 use crate::client::executor::{Executor, ExecutorResult};
 use crate::config::Config;
 use crate::logger;
 
 pub enum ClientResult {
-    Ok(()),
-    Error(Box<dyn Error>),
+    Ok,
+    ConsumerError(ConsumerError),
 }
 
 pub struct Client {
@@ -51,11 +51,11 @@ impl Client {
                 ExecutorResult::Error(e) => {
                     logger::log(&format!("Error ({:?}), exiting...", e));
 
-                    break;
+                    return ClientResult::ConsumerError(e);
                 }
             }
         }
 
-        ClientResult::Ok(())
+        ClientResult::Ok
     }
 }

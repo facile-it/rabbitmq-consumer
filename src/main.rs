@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .run()
     .await
     {
-        ClientResult::Ok(_) => Ok(()),
-        ClientResult::Error(e) => Err(e),
+        ClientResult::Ok => Ok(()),
+        ClientResult::ConsumerError(_) => Ok(()),
     }
 }

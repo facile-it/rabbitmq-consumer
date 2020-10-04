@@ -5,7 +5,7 @@ mod message;
 use async_std::sync::{Arc, RwLock};
 
 use tokio::signal::unix::{signal, SignalKind};
-use tokio::time::{delay_for, Duration};
+use tokio::stream::StreamExt;
 
 use futures::future::select_all;
 use futures::future::FutureExt;
@@ -23,8 +23,7 @@ use crate::config::queue::config::QueueConfig;
 use crate::config::queue::Queue;
 use crate::config::Config;
 use crate::logger;
-use diesel::QueryDsl;
-use tokio::stream::StreamExt;
+use crate::utils;
 
 const CONSUMER_WAIT: u64 = 60000;
 const DEFAULT_WAIT_PART: u64 = 1000;
@@ -38,7 +37,6 @@ pub enum ConsumerResult {
 
 #[derive(Debug)]
 pub enum ConsumerError {
-    GenericError,
     ConsumerChanged,
     LapinError(LapinError),
     IoError(std::io::Error),
@@ -50,6 +48,7 @@ pub enum ConsumerError {
 pub struct Consumer {
     queue: Arc<RwLock<Queue>>,
     connection: Connection,
+    message: Message,
     hooks: Vec<Arc<RwLock<dyn Events>>>,
     config: Config,
 }
@@ -61,15 +60,18 @@ impl Consumer {
             config.rabbit.host, config.rabbit.port
         ));
 
+        let queue = Arc::new(RwLock::new(Queue::new({
+            if config.database.enabled {
+                Box::new(Database::new(config.database.clone()))
+            } else {
+                Box::new(File::new(config.rabbit.queues.clone()))
+            }
+        })));
+
         Self {
-            queue: Arc::new(RwLock::new(Queue::new({
-                if config.database.enabled {
-                    Box::new(Database::new(config.database.clone()))
-                } else {
-                    Box::new(File::new(config.rabbit.queues.clone()))
-                }
-            }))),
+            queue: queue.clone(),
             connection: Connection::new(config.rabbit.clone()),
+            message: Message::new(queue),
             hooks: Vec::new(),
             config,
         }
@@ -188,7 +190,8 @@ impl Consumer {
                             let is_enabled = self.queue.write().await.is_enabled(queue_config.id);
 
                             if !is_changed && is_enabled {
-                                Message::handle_message(&channel, delivery)
+                                self.message
+                                    .handle_message(index, &queue_config, &channel, delivery)
                                     .await
                                     .map_err(|e| ConsumerError::MessageError(e))?;
                             } else {
@@ -209,7 +212,7 @@ impl Consumer {
                                             queue_config.queue_name, index
                                         ));
                                     } else {
-                                        Self::wait(DEFAULT_WAIT_PART).await;
+                                        utils::wait(DEFAULT_WAIT_PART).await;
                                     }
                                 }
 
@@ -266,17 +269,13 @@ impl Consumer {
     async fn check_consumer(&self, queue_config: &QueueConfig) {
         while let Some(_) = async {
             if !self.queue.write().await.is_enabled(queue_config.id) {
-                Some(Self::wait(CONSUMER_WAIT).await)
+                Some(utils::wait(CONSUMER_WAIT).await)
             } else {
                 None
             }
         }
         .await
         {}
-    }
-
-    async fn wait(millis: u64) {
-        delay_for(Duration::from_millis(millis)).await
     }
 }
 

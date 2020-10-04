@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use tokio::time::{delay_for, Duration};
+
 use serde::{de, Deserialize, Deserializer};
 
 #[derive(Deserialize)]
@@ -101,4 +103,8 @@ where
         Ok(value) => Ok(Some(value)),
         _ => Ok(None),
     }
+}
+
+pub async fn wait(millis: u64) {
+    delay_for(Duration::from_millis(millis)).await
 }
