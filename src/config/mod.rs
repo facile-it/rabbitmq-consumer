@@ -1,6 +1,7 @@
 pub mod database;
 pub mod file;
 pub mod queue;
+mod tests;
 
 use std::collections::HashMap;
 use std::env;
@@ -62,7 +63,7 @@ impl Config {
         };
 
         match crystalsoft_utils::read_file_string(&config) {
-            Err(why) => panic!("Couldn't read {}: {:#?}", path.as_ref(), why),
+            Err(why) => panic!("Couldn't read \"{}\": {:#?}", config, why),
             Ok(mut configuration) => {
                 logger::log(format!("\"{}\" loaded correctly.", config));
 
@@ -72,7 +73,10 @@ impl Config {
                         configuration.replace(&format!("\"${}\"", key), &format!("\"{}\"", value));
                 }
 
-                toml::from_str(&configuration).expect("Couldn't load the configuration file.")
+                toml::from_str(&configuration).expect(&format!(
+                    "Couldn't load the configuration file \"{}\".",
+                    config
+                ))
             }
         }
     }
