@@ -1,37 +1,48 @@
 mod channel;
 mod connection;
+mod message;
 
 use async_std::sync::{Arc, RwLock};
 
 use tokio::signal;
+use tokio::time::{delay_for, Duration};
 
 use futures::future::select_all;
 use futures::future::FutureExt;
 
-use lapin::{Channel as LapinChannel, Queue as LapinQueue};
+use lapin::options::BasicConsumeOptions;
+use lapin::{types::FieldTable, Channel as LapinChannel, Error as LapinError, Queue as LapinQueue};
 
 use crate::client::consumer::channel::{Channel, ChannelError};
 use crate::client::consumer::connection::{Connection, ConnectionError};
+use crate::client::consumer::message::{Message, MessageError};
 use crate::client::executor::events::{Events, EventsHandler};
 use crate::config::database::Database;
 use crate::config::file::File;
+use crate::config::queue::config::QueueConfig;
 use crate::config::queue::Queue;
 use crate::config::Config;
 use crate::logger;
+
+const CONSUMER_WAIT: u64 = 60000;
+const DEFAULT_WAIT_PART: u64 = 1000;
 
 #[derive(Debug, PartialEq)]
 pub enum ConsumerResult {
     CountChanged,
     GenericOk,
+    Killed,
 }
 
 #[derive(Debug)]
 pub enum ConsumerError {
     GenericError,
-    ConnectionError(ConnectionError),
+    ConsumerChanged,
+    LapinError(LapinError),
     IoError(std::io::Error),
+    ConnectionError(ConnectionError),
     ChannelError(ChannelError),
-    QueuesError,
+    MessageError(MessageError),
 }
 
 pub struct Consumer {
@@ -73,10 +84,13 @@ impl Consumer {
 
                 let mut signint = signal::unix::signal(signal::unix::SignalKind::interrupt())
                     .map_err(|e| ConsumerError::IoError(e))?;
-                let sigint = signint.recv().map(|_| Ok(ConsumerResult::GenericOk));
+                let sigint = signint.recv().map(|_| Ok(ConsumerResult::Killed));
+                let mut sigquit = signal::unix::signal(signal::unix::SignalKind::quit())
+                    .map_err(|e| ConsumerError::IoError(e))?;
+                let sigquit = sigquit.recv().map(|_| Ok(ConsumerResult::Killed));
                 let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
                     .map_err(|e| ConsumerError::IoError(e))?;
-                let sigterm = sigterm.recv().map(|_| Ok(ConsumerResult::GenericOk));
+                let sigterm = sigterm.recv().map(|_| Ok(ConsumerResult::Killed));
 
                 logger::log("Managing queues...");
 
@@ -86,28 +100,35 @@ impl Consumer {
                 }
 
                 let mut futures = Vec::new();
-                for queue in queues.into_iter() {
+                for queue in queues {
                     for index in 0..queue.count {
-                        let future = match Channel::get_queue(
-                            connection.clone(),
-                            queue.clone(),
-                            self.config.rabbit.queue_prefix.clone(),
-                        )
-                        .await
-                        {
-                            Ok((c, q)) => {
-                                logger::log(format!("[{}] Queue created", queue.queue_name));
+                        futures.push(
+                            async {
+                                match Channel::get_queue(
+                                    connection.clone(),
+                                    queue.clone(),
+                                    self.config.rabbit.queue_prefix.clone(),
+                                )
+                                .await
+                                {
+                                    Ok((c, q)) => {
+                                        logger::log(format!(
+                                            "[{}] Queue created",
+                                            queue.queue_name
+                                        ));
 
-                                self.consume(index, c, q).await
+                                        self.consume(index, queue.clone(), c, q).await
+                                    }
+                                    Err(e) => Err(ConsumerError::ChannelError(e)),
+                                }
                             }
-                            Err(e) => Err(ConsumerError::ChannelError(e)),
-                        };
-
-                        futures.push(async { future }.boxed());
+                            .boxed(),
+                        );
                     }
                 }
 
                 futures.push(sigint.boxed());
+                futures.push(sigquit.boxed());
                 futures.push(sigterm.boxed());
 
                 let (res, _idx, _remaining_futures) = select_all(futures).await;
@@ -127,38 +148,82 @@ impl Consumer {
     pub async fn consume(
         &self,
         index: i32,
+        queue_config: QueueConfig,
         channel: LapinChannel,
         queue: LapinQueue,
     ) -> Result<ConsumerResult, ConsumerError> {
-        Ok(ConsumerResult::GenericOk)
+        let consumer_name = format!("{}_consumer_{}", queue_config.consumer_name, index);
+
+        self.check_consumer(&queue_config).await;
+
+        let consumer = channel
+            .basic_consume(
+                queue.name().as_str(),
+                &consumer_name,
+                BasicConsumeOptions {
+                    ..Default::default()
+                },
+                FieldTable::default(),
+            )
+            .await;
+
+        match consumer {
+            Ok(consumer) => {
+                logger::log(format!(
+                    "[{}] Consumer #{} declared \"{}\"",
+                    queue_config.queue_name, index, consumer_name
+                ));
+
+                for delivery in consumer {
+                    match delivery {
+                        Ok((channel, delivery)) => {
+                            let is_changed = self
+                                .queue
+                                .write()
+                                .await
+                                .is_changed(queue_config.id, queue_config.count);
+                            let is_enabled = self.queue.write().await.is_enabled(queue_config.id);
+
+                            if !is_changed && is_enabled {
+                                Message::handle_message(channel, delivery)
+                                    .await
+                                    .map_err(|e| ConsumerError::MessageError(e))?;
+                            } else {
+                                return Err(ConsumerError::ConsumerChanged);
+                            }
+                        }
+                        Err(e) => {
+                            return Err(ConsumerError::LapinError(e));
+                        }
+                    }
+                }
+
+                Ok(ConsumerResult::GenericOk)
+            }
+            Err(e) => Err(ConsumerError::LapinError(e)),
+        }
     }
 
-    // async fn check_consumer(
-    //     data: Arc<RwLock<DatabasePlain>>,
-    //     queue_setting: QueueSetting,
-    // ) -> Result<()> {
-    //     loop_fn((), move |_| {
-    //         let wait_ms = if data.write().await.is_enabled(queue_setting.id) {
-    //             0
-    //         } else {
-    //             // Sleep 2 minutes (60000 milliseconds) each DB check
-    //             CONSUMER_WAIT
-    //         };
-    //
-    //         Self::wait(wait_ms).and_then(move |_| {
-    //             if wait_ms == 0 {
-    //                 Ok(Loop::Break(()))
-    //             } else {
-    //                 Ok(Loop::Continue(()))
-    //             }
-    //         })
-    //     })
-    // }
-    //
-    // async fn wait(millis: u64) -> Result<()> {
-    //     Delay::new(Instant::now().add(Duration::from_millis(millis)))
-    //         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
-    // }
+    async fn check_consumer(&self, queue_config: &QueueConfig) {
+        loop {
+            let wait_ms = if self.queue.write().await.is_enabled(queue_config.id) {
+                0
+            } else {
+                // Sleep 2 minutes (60000 milliseconds) each DB check
+                CONSUMER_WAIT
+            };
+
+            Self::wait(wait_ms).await;
+
+            if wait_ms == 0 {
+                break;
+            }
+        }
+    }
+
+    async fn wait(millis: u64) {
+        delay_for(Duration::from_millis(millis)).await
+    }
 }
 
 impl EventsHandler for Consumer {
