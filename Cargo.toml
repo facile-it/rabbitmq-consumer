@@ -17,7 +17,7 @@
     toml = "^0.5"
     serde = "^1.0"
     serde_derive = "^1.0"
-    diesel = { version = "^1.4", features = ["mysql", "chrono"] }
+    diesel = { version = "^1.4", features = ["mysql", "chrono", "r2d2"] }
     chrono = { version = "^0.4", features = ["serde"] }
     env_logger = "^0.7"
     base64 = "^0.9"

@@ -1,6 +1,6 @@
 use crate::config::queue::config::QueueConfig;
 
-pub trait QueueModel {
+pub trait QueueModel: Send + Sync {
     fn get_queues(&mut self) -> Vec<QueueConfig>;
     fn get_queue(&mut self, id: i32) -> Option<QueueConfig>;
 

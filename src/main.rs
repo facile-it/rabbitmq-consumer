@@ -16,10 +16,12 @@ use crate::client::{Client, ClientResult};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let name = "RabbitMQ Consumer";
     let description = "A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.";
 
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
+        .name(name)
         .author("Dario Cancelliere <dario.cancelliere@facile.it>")
         .about(description)
         .arg(
@@ -43,7 +45,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .get_matches();
 
     logger::log(format!(
-        "RabbitMQ Consumer v{} by Dario Cancelliere",
+        "{} v{} by Dario Cancelliere",
+        name,
         env!("CARGO_PKG_VERSION")
     ));
     logger::log(description);

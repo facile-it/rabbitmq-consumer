@@ -11,8 +11,9 @@ use crate::config::Config;
 #[derive(Debug)]
 pub enum ExecutorResult {
     Restart,
-    Wait(ConsumerError, u64),
     Exit,
+    Killed,
+    Wait(ConsumerError, u64),
     Error(ConsumerError),
 }
 
@@ -37,6 +38,7 @@ impl Executor {
         match self.consumer.run().await {
             Ok(ConsumerResult::CountChanged) => ExecutorResult::Restart,
             Ok(ConsumerResult::GenericOk) => ExecutorResult::Exit,
+            Ok(ConsumerResult::Killed) => ExecutorResult::Killed,
             Err(e) => {
                 let waiter = self.waiter.read().await;
                 if waiter.is_to_close() {

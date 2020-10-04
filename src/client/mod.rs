@@ -43,6 +43,11 @@ impl Client {
 
                     break;
                 }
+                ExecutorResult::Killed => {
+                    logger::log("Process killed, exiting...");
+
+                    break;
+                }
                 ExecutorResult::Error(e) => {
                     logger::log(&format!("Error ({:?}), exiting...", e));
 

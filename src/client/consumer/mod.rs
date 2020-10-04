@@ -4,7 +4,7 @@ mod message;
 
 use async_std::sync::{Arc, RwLock};
 
-use tokio::signal;
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::time::{delay_for, Duration};
 
 use futures::future::select_all;
@@ -23,6 +23,7 @@ use crate::config::queue::config::QueueConfig;
 use crate::config::queue::Queue;
 use crate::config::Config;
 use crate::logger;
+use diesel::QueryDsl;
 
 const CONSUMER_WAIT: u64 = 60000;
 const DEFAULT_WAIT_PART: u64 = 1000;
@@ -82,15 +83,20 @@ impl Consumer {
                         .on_connect(&self.config.rabbit.host, self.config.rabbit.port);
                 }
 
-                let mut signint = signal::unix::signal(signal::unix::SignalKind::interrupt())
-                    .map_err(|e| ConsumerError::IoError(e))?;
-                let sigint = signint.recv().map(|_| Ok(ConsumerResult::Killed));
-                let mut sigquit = signal::unix::signal(signal::unix::SignalKind::quit())
-                    .map_err(|e| ConsumerError::IoError(e))?;
+                let mut sigint =
+                    signal(SignalKind::interrupt()).map_err(|e| ConsumerError::IoError(e))?;
+                let sigint = sigint.recv().map(|_| Ok(ConsumerResult::Killed));
+                let mut sigquit =
+                    signal(SignalKind::quit()).map_err(|e| ConsumerError::IoError(e))?;
                 let sigquit = sigquit.recv().map(|_| Ok(ConsumerResult::Killed));
-                let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-                    .map_err(|e| ConsumerError::IoError(e))?;
+                let mut sigterm =
+                    signal(SignalKind::terminate()).map_err(|e| ConsumerError::IoError(e))?;
                 let sigterm = sigterm.recv().map(|_| Ok(ConsumerResult::Killed));
+
+                let mut futures = Vec::new();
+                futures.push(sigint.boxed());
+                futures.push(sigquit.boxed());
+                futures.push(sigterm.boxed());
 
                 logger::log("Managing queues...");
 
@@ -99,39 +105,28 @@ impl Consumer {
                     panic!("Can't load consumers due to empty queues");
                 }
 
-                let mut futures = Vec::new();
                 for queue in queues {
                     for index in 0..queue.count {
                         futures.push(
-                            async {
-                                match Channel::get_queue(
-                                    connection.clone(),
-                                    queue.clone(),
-                                    self.config.rabbit.queue_prefix.clone(),
-                                )
-                                .await
-                                {
-                                    Ok((c, q)) => {
-                                        logger::log(format!(
-                                            "[{}] Queue created",
-                                            queue.queue_name
-                                        ));
+                            match Channel::get_queue(
+                                connection.clone(),
+                                queue.clone(),
+                                self.config.rabbit.queue_prefix.clone(),
+                            )
+                            .await
+                            {
+                                Ok((c, q)) => {
+                                    logger::log(format!("[{}] Queue created", queue.queue_name));
 
-                                        self.consume(index, queue.clone(), c, q).await
-                                    }
-                                    Err(e) => Err(ConsumerError::ChannelError(e)),
+                                    self.consume(index, queue.clone(), c, q).boxed()
                                 }
-                            }
-                            .boxed(),
+                                Err(e) => async { Err(ConsumerError::ChannelError(e)) }.boxed(),
+                            },
                         );
                     }
                 }
 
-                futures.push(sigint.boxed());
-                futures.push(sigquit.boxed());
-                futures.push(sigterm.boxed());
-
-                let (res, _idx, _remaining_futures) = select_all(futures).await;
+                let (res, _, _) = select_all(futures).await;
 
                 res
             }
