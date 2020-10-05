@@ -39,7 +39,7 @@ services:
 #    build: ./docker/images/rabbitmq
 #    container_name: rabbitmq
 #    expose:
-#      - $CONSUMER_PORT
+#      - $RABBITMQ_PORT
 #    ports:
 #      - $RABBITMQ_PUBLIC_PORT:$RABBITMQ_PORT
 #      - 15672:15672

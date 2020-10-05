@@ -1,5 +1,5 @@
-mod channel;
-mod connection;
+pub mod channel;
+pub mod connection;
 mod message;
 
 use async_std::sync::{Arc, RwLock};
