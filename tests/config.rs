@@ -3,8 +3,10 @@ use std::panic;
 use async_std::net::ToSocketAddrs;
 use async_std::sync::{Arc, RwLock};
 
-use crate::config::queue::{self, config::QueueConfig, Queue, RetryMode, RetryType};
-use crate::config::{file::File, Config};
+use rabbitmq_consumer_lib::config::queue::{
+    self, config::QueueConfig, Queue, RetryMode, RetryType,
+};
+use rabbitmq_consumer_lib::config::{file::File, Config};
 
 #[test]
 fn file_read_dev() {

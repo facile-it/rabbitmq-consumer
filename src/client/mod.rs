@@ -1,6 +1,5 @@
-mod consumer;
+pub mod consumer;
 mod executor;
-mod tests;
 
 use std::thread;
 use std::time::Duration;

@@ -1,18 +1,8 @@
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate diesel;
-
-mod client;
-mod config;
-mod logger;
-mod utils;
-
 use std::error::Error;
 
 use clap::{App, Arg};
 
-use crate::client::{Client, ClientResult};
+use rabbitmq_consumer_lib::client::{Client, ClientResult};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

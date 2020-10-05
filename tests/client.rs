@@ -4,13 +4,13 @@ use lapin::options::BasicPublishOptions;
 use lapin::BasicProperties;
 use lapin::Connection as LapinConnection;
 
-use crate::client::consumer::channel::Channel;
-use crate::client::consumer::connection::{Connection, ConnectionError};
-use crate::client::consumer::{Consumer, ConsumerResult};
-use crate::config::file::File;
-use crate::config::queue::config::QueueConfig;
-use crate::config::queue::Queue;
-use crate::config::{Config, DatabaseConfig, RabbitConfig};
+use rabbitmq_consumer_lib::client::consumer::channel::Channel;
+use rabbitmq_consumer_lib::client::consumer::connection::{Connection, ConnectionError};
+use rabbitmq_consumer_lib::client::consumer::{Consumer, ConsumerResult};
+use rabbitmq_consumer_lib::config::file::File;
+use rabbitmq_consumer_lib::config::queue::config::QueueConfig;
+use rabbitmq_consumer_lib::config::queue::Queue;
+use rabbitmq_consumer_lib::config::{Config, DatabaseConfig, RabbitConfig};
 
 fn get_queues() -> Vec<QueueConfig> {
     vec![

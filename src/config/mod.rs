@@ -1,7 +1,6 @@
 pub mod database;
 pub mod file;
 pub mod queue;
-mod tests;
 
 use std::collections::HashMap;
 use std::env;
