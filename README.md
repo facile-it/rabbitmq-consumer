@@ -33,7 +33,7 @@ Run without arguments to start with default configuration or with `--help` to sh
 
 ```
 $ rabbitmq-consumer
-rabbitmq-consumer 0.6.6
+rabbitmq-consumer 1.0.0
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
 
@@ -171,7 +171,7 @@ WARNING: If you use the MySQL connection, the consumer can fails more frequently
 
 When a database configuration is enabled, the consumer will fetch a table named `queues` and will load all the configuration values from there. This is the query for creating the needed table:
 
-```
+```sql
 CREATE TABLE queues
 (
   id              INT AUTO_INCREMENT
@@ -193,50 +193,48 @@ CREATE TABLE queues
 
 You can skip this if you don't care about changing the values at runtime. Just set the `enabled` flag to `false` on the database section and use the __Static configuration__ as follows:
 
-```
+```toml
 [[rabbit.queues]]
-id = 1
-queue_name = "example"
-consumer_name = "example"
-command = "command_to_execute"
-command_timeout = 30
-base64 = false
-start_hour = "00:00:00"
-end_hour = "23:59:59"
-count = 1
-retry_wait = 120
-retry_mode = "incremental"
-enabled = true
-```
-```
+    id = 1
+    queue_name = "example"
+    consumer_name = "example"
+    command = "command_to_execute"
+    command_timeout = 30
+    base64 = false
+    start_hour = "00:00:00"
+    end_hour = "23:59:59"
+    count = 1
+    retry_wait = 120
+    retry_mode = "incremental"
+    enabled = true
+
 [[rabbit.queues]]
-id = 2
-queue_name = "example2"
-consumer_name = "example2"
-command = "command_to_execute2"
-command_timeout = 15
-base64 = false
-start_hour = "00:00:00"
-end_hour = "23:59:59"
-count = 1
-retry_wait = 120
-retry_mode = "incremental"
-enabled = true
-```
-```
+    id = 2
+    queue_name = "example2"
+    consumer_name = "example2"
+    command = "command_to_execute2"
+    command_timeout = 15
+    base64 = false
+    start_hour = "00:00:00"
+    end_hour = "23:59:59"
+    count = 1
+    retry_wait = 120
+    retry_mode = "incremental"
+    enabled = true
+
 [[rabbit.queues]]
-id = 3
-queue_name = "example3"
-consumer_name = "example3"
-command = "command_to_execute3"
-command_timeout = 20
-base64 = false
-start_hour = "00:00:00"
-end_hour = "23:59:59"
-count = 1
-retry_wait = 120
-retry_mode = "incremental"
-enabled = true
+    id = 3
+    queue_name = "example3"
+    consumer_name = "example3"
+    command = "command_to_execute3"
+    command_timeout = 20
+    base64 = false
+    start_hour = "00:00:00"
+    end_hour = "23:59:59"
+    count = 1
+    retry_wait = 120
+    retry_mode = "incremental"
+    enabled = true
 ```
 
 You can set as many consumer as you need: these consumers will run on the same process asynchronously using one thread.
@@ -254,8 +252,8 @@ The consumer will handle specific OS process exit codes in order to apply a retr
 
 # Thanks to
 * [Tokio](https://github.com/tokio-rs/tokio)
-* [Lapin](https://github.com/sozu-proxy/lapin)
+* [Lapin](https://github.com/CleverCloud/lapin)
 * [Diesel](https://github.com/diesel-rs/diesel)
 * [TOML](https://github.com/alexcrichton/toml-rs)
 * [Chrono](https://github.com/chronotope/chrono)
-* [Base64](https://github.com/alicemaz/rust-base64)
+* [Base64](https://github.com/marshallpierce/rust-base64)

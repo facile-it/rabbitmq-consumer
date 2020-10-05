@@ -1,25 +1,16 @@
-use std::cell::RefCell;
-use std::net::ToSocketAddrs;
 use std::panic;
-use std::rc::Rc;
 
-use crate::data;
-use crate::data::{models::QueueSetting, plain::Plain, DatabasePlain, RetryMode, RetryType};
+use async_std::net::ToSocketAddrs;
+use async_std::sync::{Arc, RwLock};
 
-#[test]
-fn file_read_empty() {
-    let result = panic::catch_unwind(|| {
-        data::config::config_loader(None, None);
-    });
-
-    assert!(result.is_ok());
-}
+use rabbitmq_consumer_lib::config::queue::{
+    self, config::QueueConfig, Queue, RetryMode, RetryType,
+};
+use rabbitmq_consumer_lib::config::{file::File, Config};
 
 #[test]
 fn file_read_dev() {
-    let result = panic::catch_unwind(|| {
-        data::config::config_loader(Some("dev"), None);
-    });
+    let result = panic::catch_unwind(|| Config::new("dev", "config"));
 
     assert!(result.is_ok());
 }
@@ -27,43 +18,45 @@ fn file_read_dev() {
 #[test]
 fn file_read_prod() {
     let result = panic::catch_unwind(|| {
-        data::config::config_loader(Some("prod"), None);
+        Config::new("prod", "config");
     });
 
     assert!(result.is_ok());
 }
 
-#[test]
-fn address() {
-    let config = data::config::config_loader(None, None);
-    let address = format!("{}:{}", config.rabbit.host, config.rabbit.port).to_socket_addrs();
+#[tokio::test]
+async fn address() {
+    let config = Config::new("dev", "config");
+    let address = format!("{}:{}", config.rabbit.host, config.rabbit.port)
+        .to_socket_addrs()
+        .await;
 
     assert!(address.is_ok());
     assert!(address.unwrap().next().is_some());
 }
 
-#[test]
-fn waits() {
-    let config = data::config::config_loader(None, None);
-    let data = Rc::new(RefCell::new(DatabasePlain::new({
-        Box::new(Plain::new(config.rabbit.queues.clone()))
-    })));
+#[tokio::test]
+async fn waits() {
+    let config = Config::new("dev", "config");
+    let data = Arc::new(RwLock::new(Queue::new(Box::new(File::new(
+        config.rabbit.queues.clone(),
+    )))));
 
     const TEST_WAIT: u64 = 120;
 
-    let mut data = data.borrow_mut();
+    let mut data = data.write().await;
     for queue in config.rabbit.queues {
         for consumer_index in 0..queue.count {
             assert_eq!(
                 data.get_queue_wait(queue.id, consumer_index),
-                queue.retry_wait * data::TIME_MS_MULTIPLIER
+                queue.retry_wait * queue::TIME_MS_MULTIPLIER
             );
 
             data.set_queue_wait(queue.id, TEST_WAIT, consumer_index, RetryMode::Normal);
 
             assert_eq!(
                 data.get_queue_wait(queue.id, consumer_index),
-                TEST_WAIT * data::TIME_MS_MULTIPLIER
+                TEST_WAIT * queue::TIME_MS_MULTIPLIER
             );
 
             data.set_queue_wait(queue.id, TEST_WAIT, consumer_index, RetryMode::Retry);
@@ -102,10 +95,10 @@ fn waits() {
     }
 }
 
-#[test]
-fn retry_type() {
+#[tokio::test]
+async fn retry_type() {
     let queues = vec![
-        QueueSetting {
+        QueueConfig {
             id: 1,
             queue_name: "example".into(),
             consumer_name: "example".into(),
@@ -119,7 +112,7 @@ fn retry_type() {
             retry_mode: "static".into(),
             enabled: true,
         },
-        QueueSetting {
+        QueueConfig {
             id: 2,
             queue_name: "example2".into(),
             consumer_name: "example".into(),
@@ -133,7 +126,7 @@ fn retry_type() {
             retry_mode: "ignored".into(),
             enabled: false,
         },
-        QueueSetting {
+        QueueConfig {
             id: 3,
             queue_name: "example3".into(),
             consumer_name: "example".into(),
@@ -149,11 +142,9 @@ fn retry_type() {
         },
     ];
 
-    let data = Rc::new(RefCell::new(DatabasePlain::new({
-        Box::new(Plain::new(queues.clone()))
-    })));
+    let data = Arc::new(RwLock::new(Queue::new(Box::new(File::new(queues.clone())))));
 
-    let mut data = data.borrow_mut();
+    let mut data = data.write().await;
     for queue in queues {
         match data.get_retry_type(queue.id) {
             RetryType::Ignored => {

@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  consumer:
+    build: docker/images/consumer
+    container_name: consumer
+    working_dir: /home
+    volumes:
+      - "./config/config.toml:/home/config/config.toml"
+      - "./target/debug/rabbitmq-consumer:/home/rabbitmq-consumer"
+      - "./docker/scripts/consumer/start.sh:/home/rabbitmq-consumer.sh"
+      - "./logs:/home/logs"
+    ulimits:
+      nproc: 1000000
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    env_file: .env
+    command: >
+      /bin/sh -c "chmod a+x rabbitmq-consumer && chmod a+x rabbitmq-consumer.sh && ./rabbitmq-consumer.sh"
+    restart: always
+    depends_on:
+      - rabbitmq
+
+# Testing containers images
+#  db:
+#    image: mariadb:latest
+#    container_name: r_db
+#    environment:
+#      TZ: Europe/Rome
+#      MYSQL_DATABASE: test
+#      MYSQL_ROOT_PASSWORD: root
+#      MYSQL_TCP_PORT: 3306
+#    expose:
+#      - 3306
+#    ports:
+#      - 3312:3306
+#
+#  rabbitmq:
+#    build: ./docker/images/rabbitmq
+#    container_name: rabbitmq
+#    expose:
+#      - $RABBITMQ_PORT
+#    ports:
+#      - $RABBITMQ_PUBLIC_PORT:$RABBITMQ_PORT
+#      - 15672:15672

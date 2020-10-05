@@ -1,12 +1,9 @@
-use chrono::NaiveTime;
+use chrono::{self, NaiveTime};
 
-use crate::utils::bool_or_string;
-use crate::utils::i32_or_string;
-use crate::utils::u64_or_string;
-use crate::utils::option_u64_or_string;
+use crate::utils::{bool_or_string, i32_or_string, option_u64_or_string, u64_or_string};
 
 #[derive(Queryable, Deserialize, Debug, Clone)]
-pub struct QueueSetting {
+pub struct QueueConfig {
     #[serde(deserialize_with = "i32_or_string")]
     pub id: i32,
     pub queue_name: String,
