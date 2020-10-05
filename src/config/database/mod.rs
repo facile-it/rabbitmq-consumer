@@ -43,10 +43,12 @@ impl Database {
         ));
 
         let manager = ConnectionManager::<MysqlConnection>::new(database_url);
-        Pool::builder().build(manager).expect(&format!(
-            "Error connecting to host {} with db name {}.",
-            config.host, config.db_name
-        ))
+        Pool::builder().build(manager).unwrap_or_else(|e| {
+            panic!(
+                "Error {:?} connecting to host {} with db name {}.",
+                e, config.host, config.db_name
+            )
+        })
     }
 
     pub fn reconnect(&mut self) {

@@ -81,14 +81,12 @@ impl Consumer {
                         .on_connect(&self.config.rabbit.host, self.config.rabbit.port);
                 }
 
-                let mut sigint =
-                    signal(SignalKind::interrupt()).map_err(|e| ConsumerError::IoError(e))?;
+                let mut sigint = signal(SignalKind::interrupt()).map_err(ConsumerError::IoError)?;
                 let sigint = sigint.recv().map(|_| Ok(ConsumerResult::Killed));
-                let mut sigquit =
-                    signal(SignalKind::quit()).map_err(|e| ConsumerError::IoError(e))?;
+                let mut sigquit = signal(SignalKind::quit()).map_err(ConsumerError::IoError)?;
                 let sigquit = sigquit.recv().map(|_| Ok(ConsumerResult::Killed));
                 let mut sigterm =
-                    signal(SignalKind::terminate()).map_err(|e| ConsumerError::IoError(e))?;
+                    signal(SignalKind::terminate()).map_err(ConsumerError::IoError)?;
                 let sigterm = sigterm.recv().map(|_| Ok(ConsumerResult::Killed));
 
                 let mut futures = Vec::new();
@@ -188,17 +186,18 @@ impl Consumer {
                                 self.message
                                     .handle_message(index, &queue_config, &channel, delivery)
                                     .await
-                                    .map_err(|e| ConsumerError::MessageError(e))?;
+                                    .map_err(ConsumerError::MessageError)?;
                             }
 
                             if !is_enabled {
                                 if !is_changed {
-                                    if let Err(_) = channel
+                                    if channel
                                         .basic_cancel(
                                             &consumer_name,
                                             BasicCancelOptions { nowait: false },
                                         )
                                         .await
+                                        .is_err()
                                     {
                                         logger::log(&format!(
                                             "[{}] Error canceling the consumer #{}, returning...",
@@ -209,9 +208,10 @@ impl Consumer {
                                     }
                                 }
 
-                                if let Err(_) = channel
+                                if channel
                                     .basic_recover(BasicRecoverOptions { requeue: true })
                                     .await
+                                    .is_err()
                                 {
                                     logger::log(
                                         &format!(
@@ -262,14 +262,16 @@ impl Consumer {
     }
 
     async fn check_consumer(&self, queue_config: &QueueConfig) {
-        while let Some(_) = async {
+        while async {
             if !self.queue.write().await.is_enabled(queue_config.id) {
-                Some(utils::wait(CONSUMER_WAIT).await)
+                utils::wait(CONSUMER_WAIT).await;
+                Some(())
             } else {
                 None
             }
         }
         .await
+        .is_some()
         {}
     }
 }

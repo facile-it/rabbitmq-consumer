@@ -1033,7 +1033,7 @@ dependencies = [
 
 [[package]]
 name = "rabbitmq-consumer"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "async-std 1.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",

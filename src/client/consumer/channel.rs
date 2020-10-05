@@ -22,7 +22,7 @@ impl Channel {
         let channel = connection
             .create_channel()
             .await
-            .map_err(|e| ChannelError::LapinError(e))?;
+            .map_err(ChannelError::LapinError)?;
         channel
             .basic_qos(
                 1,
@@ -31,7 +31,7 @@ impl Channel {
                 },
             )
             .await
-            .map_err(|e| ChannelError::LapinError(e))?;
+            .map_err(ChannelError::LapinError)?;
 
         logger::log(format!(
             "[{}] Created channel with id: {}",
@@ -50,7 +50,7 @@ impl Channel {
                 FieldTable::default(),
             )
             .await
-            .map_err(|e| ChannelError::LapinError(e))?;
+            .map_err(ChannelError::LapinError)?;
 
         Ok((channel, queue))
     }

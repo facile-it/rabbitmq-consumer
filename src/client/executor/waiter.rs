@@ -19,11 +19,7 @@ impl Waiter {
 
     pub fn is_to_close(&self) -> bool {
         if self.connections > 0 {
-            if self.waiting_times < self.connections {
-                false
-            } else {
-                true
-            }
+            self.waiting_times >= self.connections
         } else {
             false
         }
@@ -37,10 +33,8 @@ impl Events for Waiter {
     }
 
     fn on_error(&mut self, _error: &str) {
-        if self.connections > 0 {
-            if self.waiting_times < self.connections {
-                self.waiting_times += 1;
-            }
+        if self.connections > 0 && self.waiting_times < self.connections {
+            self.waiting_times += 1;
         }
 
         if self.waiting < (u64::max_value() / 2) {

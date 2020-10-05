@@ -125,10 +125,7 @@ impl Message {
                 .get_command_timeout(queue_config.id),
         )
         .map(|_| CommandResult::Timeout);
-        let output = message_command
-            .command
-            .output()
-            .map(|output| CommandResult::Output(output));
+        let output = message_command.command.output().map(CommandResult::Output);
 
         let (res, _, _) = select_all(vec![timeout.boxed(), output.boxed()]).await;
         match res {
@@ -151,7 +148,7 @@ impl Message {
                                     delivery.delivery_tag,
                                     BasicAckOptions { multiple: false },
                                 )
-                                .map_err(|e| MessageError::LapinError(e))
+                                .map_err(MessageError::LapinError)
                                 .await?;
                         }
                         _ => match output.status.code().unwrap_or(NEGATIVE_ACKNOWLEDGEMENT) {
@@ -166,7 +163,7 @@ impl Message {
                                         delivery.delivery_tag,
                                         BasicAckOptions { multiple: false },
                                     )
-                                    .map_err(|e| MessageError::LapinError(e))
+                                    .map_err(MessageError::LapinError)
                                     .await?;
 
                                 self.queue.write().await.set_queue_wait(
@@ -192,7 +189,7 @@ impl Message {
                                         delivery.delivery_tag,
                                         BasicRejectOptions { requeue: true },
                                     )
-                                    .map_err(|e| MessageError::LapinError(e))
+                                    .map_err(MessageError::LapinError)
                                     .await?;
 
                                 let ms = self
@@ -231,7 +228,7 @@ impl Message {
                                         delivery.delivery_tag,
                                         BasicRejectOptions { requeue: false },
                                     )
-                                    .map_err(|e| MessageError::LapinError(e))
+                                    .map_err(MessageError::LapinError)
                                     .await?;
                             }
                         },
@@ -251,7 +248,7 @@ impl Message {
                                 delivery.delivery_tag,
                                 BasicRejectOptions { requeue: false },
                             )
-                            .map_err(|e| MessageError::LapinError(e))
+                            .map_err(MessageError::LapinError)
                             .await?;
                     }
                 }
@@ -271,7 +268,7 @@ impl Message {
 
                 channel
                     .basic_reject(delivery.delivery_tag, BasicRejectOptions { requeue: true })
-                    .map_err(|e| MessageError::LapinError(e))
+                    .map_err(MessageError::LapinError)
                     .await?;
 
                 Ok(MessageResult::GenericOk)
@@ -280,7 +277,7 @@ impl Message {
     }
 
     async fn wait_db(&self, index: i32, queue_config: &QueueConfig) {
-        while let Some(_) = async {
+        while async {
             let is_enabled = self.queue.write().await.is_enabled(queue_config.id);
             if is_enabled {
                 let waiting = self
@@ -307,13 +304,15 @@ impl Message {
                         RetryMode::Forced,
                     );
 
-                    Some(utils::wait(DEFAULT_WAIT_PART).await)
+                    utils::wait(DEFAULT_WAIT_PART).await;
+                    Some(())
                 }
             } else {
                 None
             }
         }
         .await
+        .is_some()
         {}
     }
 }

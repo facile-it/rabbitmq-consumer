@@ -7,8 +7,6 @@ use std::env;
 use std::fs::File;
 use std::path::Path;
 
-use toml;
-
 use serde::Deserialize;
 
 use crate::config::queue::config::QueueConfig;
@@ -72,10 +70,12 @@ impl Config {
                         configuration.replace(&format!("\"${}\"", key), &format!("\"{}\"", value));
                 }
 
-                toml::from_str(&configuration).expect(&format!(
-                    "Couldn't load the configuration file \"{}\".",
-                    config
-                ))
+                toml::from_str(&configuration).unwrap_or_else(|e| {
+                    panic!(
+                        "Couldn't load the configuration file \"{}\": {:?}",
+                        config, e
+                    )
+                })
             }
         }
     }
