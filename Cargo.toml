@@ -25,7 +25,10 @@
     base64 = "^0.9"
     clap = "^2.33"
     crystalsoft-utils = "^0.1"
+    openssl = "^0.10"
 
+    # For static building
+    openssl-sys = { version = "*", features = ["vendored"] }
 
 # For static building
 [patch.crates-io]
