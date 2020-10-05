@@ -5,5 +5,5 @@ extern crate diesel;
 
 pub mod client;
 pub mod config;
-mod logger;
+pub mod logger;
 mod utils;

@@ -3,6 +3,7 @@ use std::error::Error;
 use clap::{App, Arg};
 
 use rabbitmq_consumer_lib::client::{Client, ClientResult};
+use rabbitmq_consumer_lib::logger;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

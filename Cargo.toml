@@ -2,7 +2,6 @@
     name = "rabbitmq-consumer"
     version = "1.0.0"
     authors = ["Dario Cancelliere <dario.cancelliere@facile.it>"]
-    build = "build.rs"
     edition = "2018"
 
 [lib]
