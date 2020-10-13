@@ -30,6 +30,16 @@ script:
     - sudo make install
     - sudo cp /usr/local/lib/libz.a /usr/lib/x86_64-linux-gnu/libz.a
     - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libz.a
+    - wget https://www.openssl.org/source/openssl-1.1.1h.tar.gz
+    - tar -xvzf openssl-1.1.1h.tar.gz
+    - cd openssl-1.1.1h
+    - CFLAGS="-fPIC" ./config
+    - sudo make
+    - sudo make install
+    - sudo cp /usr/local/lib/libssl.a /usr/lib/x86_64-linux-gnu/libssl.a
+    - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libssl.a
+    - sudo cp /usr/local/lib/libcrypto.a /usr/lib/x86_64-linux-gnu/libcrypto.a
+    - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libcrypto.a
     - cargo build --verbose --all
     - cargo test --verbose --all
 
