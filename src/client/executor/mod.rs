@@ -4,7 +4,7 @@ mod waiter;
 use async_std::sync::{Arc, RwLock};
 
 use crate::client::consumer::{Consumer, ConsumerError, ConsumerResult};
-use crate::client::executor::events::EventsHandler;
+use crate::client::executor::events::{Events, EventsHandler};
 use crate::client::executor::waiter::Waiter;
 use crate::config::Config;
 
@@ -41,7 +41,9 @@ impl Executor {
             Ok(ConsumerResult::GenericOk) => ExecutorResult::Exit,
             Ok(ConsumerResult::Killed) => ExecutorResult::Killed,
             Err(e) => {
-                let waiter = self.waiter.read().await;
+                let mut waiter = self.waiter.write().await;
+                waiter.on_error(&format!("{:?}", e));
+
                 if waiter.is_to_close() {
                     return ExecutorResult::Error(e);
                 }

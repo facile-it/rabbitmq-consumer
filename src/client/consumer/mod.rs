@@ -126,13 +126,7 @@ impl Consumer {
 
                 res
             }
-            Err(e) => {
-                for hook in &self.hooks {
-                    hook.write().await.on_error(&format!("{:?}", e));
-                }
-
-                Err(ConsumerError::ConnectionError(e))
-            }
+            Err(e) => Err(ConsumerError::ConnectionError(e)),
         }
     }
 

@@ -1152,7 +1152,7 @@ dependencies = [
 
 [[package]]
 name = "rabbitmq-consumer"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "async-std",
  "base64 0.9.3",

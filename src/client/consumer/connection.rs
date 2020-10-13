@@ -28,6 +28,12 @@ impl Connection {
     }
 
     pub async fn get_connection(&mut self) -> Result<Arc<LapinConnection>, ConnectionError> {
+        if let Ok(ref lapin) = self.lapin {
+            if lapin.status().errored() {
+                self.lapin = Err(ConnectionError::NotConnected);
+            }
+        }
+
         if self.lapin.is_err() {
             logger::log(&format!(
                 "Connecting to RabbitMQ at {}:{}...",

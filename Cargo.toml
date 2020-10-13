@@ -1,6 +1,6 @@
 [package]
     name = "rabbitmq-consumer"
-    version = "1.0.2"
+    version = "1.0.3"
     authors = ["Dario Cancelliere <dario.cancelliere@facile.it>"]
     edition = "2018"
 
