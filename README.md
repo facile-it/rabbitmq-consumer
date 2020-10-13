@@ -10,7 +10,7 @@ You can either compile it yourself, or download a precompiled binary from [here]
 
 ### Compiling
 
-You need the Rust environment, and you should be familiar with the language, in order to build a binary.
+You need the Rust nightly environment, and you should be familiar with the language, in order to build a binary.
 
 #### Installing Rust
 
@@ -18,14 +18,18 @@ In order to install the Rust toolchain with  `rustc` (compiler), `rustup` and `C
 `curl https://sh.rustup.rs -sSf | sh`
 
 #### Introducing Cargo
+
 Cargo is a dependency manager for Rust. You can create new projects, require new crates (libraries) or update existing crates.  
 
 #### Building
-Just run `cargo build` inside the project folder to build a debug binary.
 
-You can even build a release binary (slower but optimized build) using `cargo build --release`
+Just run `cargo +nightly build` inside the project folder to build a debug binary.
+
+You can even build a release binary (slower but optimized build) using `cargo +nightly build --release`
 
 NB: You need the `libmysqlclient-dev` package (for Ubuntu) or `mysql-client` (for macOS) in order to build and statically link the binary.
+
+WARNING: Nightly Rust version is required for this project in order to compile (caused by the static linking of some non-bundles libraries)
 
 ## Usage
 
