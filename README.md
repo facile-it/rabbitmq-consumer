@@ -1,5 +1,5 @@
 # RabbitMQ consumer
-[![Build Status](https://travis-ci.org/facile-it/rabbitmq-consumer.svg?branch=master)](https://travis-ci.org/facile-it/rabbitmq-consumer)
+[![Build Status](https://travis-ci.com/facile-it/rabbitmq-consumer.svg?branch=master)](https://travis-ci.com/facile-it/rabbitmq-consumer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
