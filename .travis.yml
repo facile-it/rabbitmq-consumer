@@ -1,4 +1,4 @@
-dist: trusty
+dist: focal
 
 language: rust
 
@@ -11,40 +11,15 @@ cache: cargo
 
 addons:
   apt:
+    update: true
     packages:
       - cmake
       - build-essential
       - libssl-dev
       - libmysqlclient-dev
-      - libz-dev
 
 services:
   - rabbitmq
-
-script:
-    - wget http://www.zlib.net/zlib-1.2.11.tar.gz
-    - tar -xvzf zlib-1.2.11.tar.gz
-    - cd zlib-1.2.11
-    - CFLAGS="-O3 -fPIC" ./configure
-    - sudo make
-    - sudo make install
-    - sudo cp /usr/local/lib/libz.a /usr/lib/x86_64-linux-gnu/libz.a
-    - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libz.a
-    - wget https://www.openssl.org/source/openssl-1.1.1h.tar.gz
-    - tar -xvzf openssl-1.1.1h.tar.gz
-    - cd openssl-1.1.1h
-    - CFLAGS="-fPIC" ./config
-    - sudo make
-    - sudo make install
-    - sudo cp /usr/local/lib/libssl.a /usr/lib/x86_64-linux-gnu/libssl.a
-    - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libssl.a
-    - sudo cp /usr/local/lib/libcrypto.a /usr/lib/x86_64-linux-gnu/libcrypto.a
-    - sudo chmod 644 /usr/lib/x86_64-linux-gnu/libcrypto.a
-    - cargo build --verbose --all
-    - cargo test --verbose --all
-
-before_install:
-  - pkg-config --list-all
 
 after_success: |
     if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
