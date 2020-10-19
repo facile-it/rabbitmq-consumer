@@ -13,13 +13,11 @@ addons:
   apt:
     update: true
     packages:
+      - rabbitmq-server
       - cmake
       - build-essential
       - libssl-dev
       - libmysqlclient-dev
-
-services:
-  - rabbitmq
 
 after_success: |
     if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
