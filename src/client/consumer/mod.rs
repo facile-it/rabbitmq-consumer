@@ -22,7 +22,6 @@ use crate::config::file::File;
 use crate::config::queue::config::QueueConfig;
 use crate::config::queue::Queue;
 use crate::config::Config;
-use crate::logger;
 use crate::utils;
 
 const CONSUMER_WAIT: u64 = 60000;
@@ -94,7 +93,7 @@ impl Consumer {
                 futures.push(sigquit.boxed());
                 futures.push(sigterm.boxed());
 
-                logger::log("Managing queues...");
+                info!("Managing queues...");
 
                 let queues = self.queue.write().await.get_queues();
                 if queues.is_empty() {
@@ -112,7 +111,7 @@ impl Consumer {
                             .await
                             {
                                 Ok((c, q)) => {
-                                    logger::log(format!("[{}] Queue created", queue.queue_name));
+                                    info!("[{}] Queue created", queue.queue_name);
 
                                     self.consume(index, queue.clone(), c, q).boxed()
                                 }
@@ -140,10 +139,10 @@ impl Consumer {
         let consumer_name = format!("{}_consumer_{}", queue_config.consumer_name, index);
 
         if !self.queue.write().await.is_enabled(queue_config.id) {
-            logger::log(format!(
+            info!(
                 "[{}] Consumer #{} with \"{}\" not enabled, waiting...",
                 queue_config.queue_name, index, consumer_name
-            ));
+            );
         }
 
         self.check_consumer(&queue_config).await;
@@ -161,10 +160,10 @@ impl Consumer {
 
         match consumer {
             Ok(mut consumer) => {
-                logger::log(format!(
+                info!(
                     "[{}] Consumer #{} declared \"{}\"",
                     queue_config.queue_name, index, consumer_name
-                ));
+                );
 
                 while let Some(delivery) = consumer.next().await {
                     match delivery {
@@ -193,10 +192,10 @@ impl Consumer {
                                         .await
                                         .is_err()
                                     {
-                                        logger::log(&format!(
+                                        info!(
                                             "[{}] Error canceling the consumer #{}, returning...",
                                             queue_config.queue_name, index
-                                        ));
+                                        );
                                     } else {
                                         utils::wait(DEFAULT_WAIT_PART).await;
                                     }
@@ -207,47 +206,40 @@ impl Consumer {
                                     .await
                                     .is_err()
                                 {
-                                    logger::log(
-                                        &format!(
+                                    info!(
                                             "[{}] Error recovering message for consumer #{}, message is not ackable...",
                                             queue_config.queue_name,
                                             index
-                                        )
-                                    );
+                                        );
 
                                     return Ok(ConsumerResult::GenericOk);
                                 }
 
-                                logger::log(
-                                    &format!(
+                                info!(
                                         "[{}] Consumer #{} not active, messages recovered and consumer canceled...",
                                         queue_config.queue_name,
                                         index
-                                    )
-                                );
+                                    );
 
                                 return Ok(ConsumerResult::ConsumerChanged);
                             } else if is_changed {
-                                logger::log(&format!(
+                                info!(
                                     "[{}] Consumers count changed, messages recovered...",
                                     queue_config.queue_name
-                                ));
+                                );
 
                                 return Ok(ConsumerResult::CountChanged);
                             }
                         }
                         Err(e) => {
-                            logger::log(format!(
-                                "[{}] Error getting messages.",
-                                queue_config.queue_name
-                            ));
+                            info!("[{}] Error getting messages.", queue_config.queue_name);
 
                             return Err(ConsumerError::LapinError(e));
                         }
                     }
                 }
 
-                logger::log("Messages has been processed.");
+                info!("Messages has been processed.");
 
                 Ok(ConsumerResult::GenericOk)
             }

@@ -19,7 +19,6 @@ use base64::encode as base64_encode;
 use crate::client::consumer::DEFAULT_WAIT_PART;
 use crate::config::queue::config::QueueConfig;
 use crate::config::queue::{Queue, RetryMode, RetryType};
-use crate::logger;
 use crate::utils;
 
 #[derive(Debug)]
@@ -100,10 +99,10 @@ impl Message {
             }
         };
 
-        logger::log(&format!(
+        info!(
             "[{}] Executing command \"{}\" on consumer #{}",
             queue_config.queue_name, message_command.human, index
-        ));
+        );
 
         self.process_message(index, queue_config, msg, message_command, channel, delivery)
             .await
@@ -134,13 +133,11 @@ impl Message {
                 match output {
                     Ok(output) => match retry_type {
                         RetryType::Ignored => {
-                            logger::log(
-                                &format!(
-                                    "[{}] Command \"{}\" executed on consumer #{} and result ignored, message removed.",
-                                    queue_config.queue_name,
-                                    message_command.human,
-                                    index
-                                )
+                            info!(
+                                "[{}] Command \"{}\" executed on consumer #{} and result ignored, message removed.",
+                                queue_config.queue_name,
+                                message_command.human,
+                                index
                             );
 
                             channel
@@ -153,10 +150,10 @@ impl Message {
                         }
                         _ => match output.status.code().unwrap_or(NEGATIVE_ACKNOWLEDGEMENT) {
                             ACKNOWLEDGEMENT => {
-                                logger::log(&format!(
+                                info!(
                                     "[{}] Command \"{}\" succeeded on consumer #{}, message removed.",
                                     queue_config.queue_name, message_command.human, index
-                                ));
+                                );
 
                                 channel
                                     .basic_ack(
@@ -174,15 +171,13 @@ impl Message {
                                 );
                             }
                             NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE => {
-                                logger::log(
-                                    &format!(
+                                info!(
                                         "[{}] Command \"{}\" failed on consumer #{}, message rejected and requeued. Output:\n{:#?}",
                                         queue_config.queue_name,
                                         message_command.human,
                                         index,
                                         output
-                                    )
-                                );
+                                    );
 
                                 channel
                                     .basic_reject(
@@ -198,10 +193,10 @@ impl Message {
                                     .await
                                     .get_queue_wait(queue_config.id, index);
 
-                                logger::log(&format!(
+                                info!(
                                     "[{}] Waiting {} milliseconds for consumer #{}...",
                                     queue_config.queue_name, ms, index
-                                ));
+                                );
 
                                 self.wait_db(index, queue_config).await;
 
@@ -213,15 +208,13 @@ impl Message {
                                 );
                             }
                             _ => {
-                                logger::log(
-                                    &format!(
+                                info!(
                                         "[{}] Command \"{}\" failed on consumer #{}, message rejected. Output:\n{:#?}",
                                         queue_config.queue_name,
                                         message_command.human,
                                         index,
                                         output
-                                    )
-                                );
+                                    );
 
                                 channel
                                     .basic_reject(
@@ -234,14 +227,14 @@ impl Message {
                         },
                     },
                     Err(e) => {
-                        logger::log(&format!(
+                        info!(
                             "[{}] Error {:?} executing the command \"{}\" on consumer #{}, message \"{}\" rejected...",
                             queue_config.queue_name,
                             e,
                             message_command.human,
                             index,
                             msg
-                        ));
+                        );
 
                         channel
                             .basic_reject(
@@ -256,15 +249,13 @@ impl Message {
                 Ok(MessageResult::GenericOk)
             }
             CommandResult::Timeout => {
-                logger::log(
-                    &format!(
+                info!(
                         "[{}] Timeout occurred executing the command \"{}\" on consumer #{}, message \"{}\" rejected and requeued...",
                         queue_config.queue_name,
                         message_command.human,
                         index,
                         msg
-                    )
-                );
+                    );
 
                 channel
                     .basic_reject(delivery.delivery_tag, BasicRejectOptions { requeue: true })

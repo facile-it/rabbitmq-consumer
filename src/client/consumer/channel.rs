@@ -4,7 +4,6 @@ use lapin::options::{BasicQosOptions, QueueDeclareOptions};
 use lapin::{types::FieldTable, Channel as LapinChannel, Connection, Error as LapinError, Queue};
 
 use crate::config::queue::config::QueueConfig;
-use crate::logger;
 
 #[derive(Debug)]
 pub enum ChannelError {
@@ -33,11 +32,11 @@ impl Channel {
             .await
             .map_err(ChannelError::LapinError)?;
 
-        logger::log(format!(
+        info!(
             "[{}] Created channel with id: {}",
             queue.queue_name,
             channel.id()
-        ));
+        );
 
         let queue = channel
             .queue_declare(

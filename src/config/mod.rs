@@ -10,7 +10,6 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::config::queue::config::QueueConfig;
-use crate::logger;
 use crate::utils::{bool_or_string, option_i32_or_string, u16_or_string};
 
 #[derive(Deserialize)]
@@ -62,7 +61,7 @@ impl Config {
         match crystalsoft_utils::read_file_string(&config) {
             Err(why) => panic!("Couldn't read \"{}\": {:#?}", config, why),
             Ok(mut configuration) => {
-                logger::log(format!("\"{}\" loaded correctly.", config));
+                info!("\"{}\" loaded correctly.", config);
 
                 let variables: HashMap<_, _> = env::vars().collect();
                 for (key, value) in variables {

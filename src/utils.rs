@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use tokio::time::{delay_for, Duration};
+use tokio::time::{sleep, Duration};
 
 use serde::{de, Deserialize, Deserializer};
 
@@ -106,5 +106,5 @@ where
 }
 
 pub async fn wait(millis: u64) {
-    delay_for(Duration::from_millis(millis)).await
+    sleep(Duration::from_millis(millis)).await
 }
