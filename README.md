@@ -4,6 +4,14 @@
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
 
+## 1.2.0 warning
+
+In order to use this version correctly and only if you use the MySQL configuration for queues, you have to update your `queues` table schema adding a new `nack_code` integer field:
+
+```sql
+ALTER TABLE queues ADD nack_code INT(11) DEFAULT 2 NULL;
+```
+
 ## Installation
 
 You can either compile it yourself, or download a precompiled binary from [here](https://github.com/facile-it/rabbitmq-consumer/releases).
@@ -124,6 +132,9 @@ This section (a TOML array) defines all queues and consumers.
 > `count = 1`
 >> Specify how many consumers to run for this queue. WARNING: use multiple counts only on a shared instance, for a container based utilization, is recommended to split the load between replicas or more containers. 
 
+> `nack_code = 2`
+>> If specified, the not requeue logic (nack not requeue) applies only to this specific exit code, all other exit code will requeue the message.
+
 > `retry_wait = 120`
 >> The waiting time for the retry mode: default is 120 (value is in seconds).
 
@@ -188,6 +199,7 @@ CREATE TABLE queues
   start_hour      TIME                              NOT NULL,
   end_hour        TIME                              NOT NULL,
   count           INT(11) DEFAULT 1                 NOT NULL,
+  nack_code       INT(11) DEFAULT 2                 NULL,
   retry_wait      BIGINT UNSIGNED DEFAULT 120       NOT NULL,
   retry_mode      VARCHAR(50) DEFAULT 'incremental' NOT NULL,
   enabled         TINYINT(1)                        NOT NULL

@@ -148,30 +148,44 @@ impl Message {
                                 .map_err(MessageError::LapinError)
                                 .await?;
                         }
-                        _ => match output.status.code().unwrap_or(NEGATIVE_ACKNOWLEDGEMENT) {
-                            ACKNOWLEDGEMENT => {
-                                info!(
-                                    "[{}] Command \"{}\" succeeded on consumer #{}, message removed.",
-                                    queue_config.queue_name, message_command.human, index
-                                );
+                        _ => {
+                            let exit_code =
+                                output.status.code().unwrap_or(NEGATIVE_ACKNOWLEDGEMENT);
 
-                                channel
-                                    .basic_ack(
-                                        delivery.delivery_tag,
-                                        BasicAckOptions { multiple: false },
-                                    )
-                                    .map_err(MessageError::LapinError)
-                                    .await?;
+                            let exit_code = if let Some(nack_code) = queue_config.nack_code {
+                                if nack_code == exit_code {
+                                    NEGATIVE_ACKNOWLEDGEMENT
+                                } else {
+                                    NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE
+                                }
+                            } else {
+                                exit_code
+                            };
 
-                                self.queue.write().await.set_queue_wait(
-                                    queue_config.id,
-                                    queue_config.retry_wait,
-                                    index,
-                                    RetryMode::Normal,
-                                );
-                            }
-                            NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE => {
-                                info!(
+                            match exit_code {
+                                ACKNOWLEDGEMENT => {
+                                    info!(
+                                        "[{}] Command \"{}\" succeeded on consumer #{}, message removed.",
+                                        queue_config.queue_name, message_command.human, index
+                                    );
+
+                                    channel
+                                        .basic_ack(
+                                            delivery.delivery_tag,
+                                            BasicAckOptions { multiple: false },
+                                        )
+                                        .map_err(MessageError::LapinError)
+                                        .await?;
+
+                                    self.queue.write().await.set_queue_wait(
+                                        queue_config.id,
+                                        queue_config.retry_wait,
+                                        index,
+                                        RetryMode::Normal,
+                                    );
+                                }
+                                NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE => {
+                                    info!(
                                         "[{}] Command \"{}\" failed on consumer #{}, message rejected and requeued. Output:\n{:#?}",
                                         queue_config.queue_name,
                                         message_command.human,
@@ -179,36 +193,36 @@ impl Message {
                                         output
                                     );
 
-                                channel
-                                    .basic_reject(
-                                        delivery.delivery_tag,
-                                        BasicRejectOptions { requeue: true },
-                                    )
-                                    .map_err(MessageError::LapinError)
-                                    .await?;
+                                    channel
+                                        .basic_reject(
+                                            delivery.delivery_tag,
+                                            BasicRejectOptions { requeue: true },
+                                        )
+                                        .map_err(MessageError::LapinError)
+                                        .await?;
 
-                                let ms = self
-                                    .queue
-                                    .write()
-                                    .await
-                                    .get_queue_wait(queue_config.id, index);
+                                    let ms = self
+                                        .queue
+                                        .write()
+                                        .await
+                                        .get_queue_wait(queue_config.id, index);
 
-                                info!(
-                                    "[{}] Waiting {} milliseconds for consumer #{}...",
-                                    queue_config.queue_name, ms, index
-                                );
+                                    info!(
+                                        "[{}] Waiting {} milliseconds for consumer #{}...",
+                                        queue_config.queue_name, ms, index
+                                    );
 
-                                self.wait_db(index, queue_config).await;
+                                    self.wait_db(index, queue_config).await;
 
-                                self.queue.write().await.set_queue_wait(
-                                    queue_config.id,
-                                    ms,
-                                    index,
-                                    RetryMode::Retry,
-                                );
-                            }
-                            _ => {
-                                info!(
+                                    self.queue.write().await.set_queue_wait(
+                                        queue_config.id,
+                                        ms,
+                                        index,
+                                        RetryMode::Retry,
+                                    );
+                                }
+                                _ => {
+                                    info!(
                                         "[{}] Command \"{}\" failed on consumer #{}, message rejected. Output:\n{:#?}",
                                         queue_config.queue_name,
                                         message_command.human,
@@ -216,15 +230,16 @@ impl Message {
                                         output
                                     );
 
-                                channel
-                                    .basic_reject(
-                                        delivery.delivery_tag,
-                                        BasicRejectOptions { requeue: false },
-                                    )
-                                    .map_err(MessageError::LapinError)
-                                    .await?;
+                                    channel
+                                        .basic_reject(
+                                            delivery.delivery_tag,
+                                            BasicRejectOptions { requeue: false },
+                                        )
+                                        .map_err(MessageError::LapinError)
+                                        .await?;
+                                }
                             }
-                        },
+                        }
                     },
                     Err(e) => {
                         info!(

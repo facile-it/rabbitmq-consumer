@@ -1,6 +1,6 @@
 [package]
     name = "rabbitmq-consumer"
-    version = "1.1.0"
+    version = "1.2.0"
     authors = ["Dario Cancelliere <dario.cancelliere@facile.it>"]
     edition = "2018"
 
@@ -12,8 +12,9 @@
     lto = true
 
 [dependencies]
-    async-std = "^1.7"
-    tokio = { version = "^0.3", features = ["full"] }
+    async-std = "^1.8"
+    tokio = { version = "^1.0", features = ["full"] }
+    tokio-stream = "^0.1"
     futures = "^0.3"
     lapin = "^1.6"
     toml = "^0.5"
