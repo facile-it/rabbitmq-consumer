@@ -5,7 +5,7 @@ mod message;
 use async_std::sync::{Arc, RwLock};
 
 use tokio::signal::unix::{signal, SignalKind};
-use tokio::stream::StreamExt;
+use tokio_stream::StreamExt;
 
 use futures::future::select_all;
 use futures::future::FutureExt;
