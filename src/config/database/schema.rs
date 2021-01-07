@@ -9,6 +9,7 @@ table! {
         start_hour -> Nullable<Time>,
         end_hour -> Nullable<Time>,
         count -> Integer,
+        nack_code -> Nullable<Integer>,
         retry_wait -> Unsigned<BigInt>,
         retry_mode -> Varchar,
         enabled -> Bool,
