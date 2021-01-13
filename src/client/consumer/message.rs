@@ -155,6 +155,8 @@ impl Message {
                             let exit_code = if let Some(nack_code) = queue_config.nack_code {
                                 if nack_code == exit_code {
                                     NEGATIVE_ACKNOWLEDGEMENT
+                                } else if exit_code == ACKNOWLEDGEMENT {
+                                    exit_code
                                 } else {
                                     NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE
                                 }
