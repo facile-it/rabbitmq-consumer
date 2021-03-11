@@ -39,6 +39,16 @@ NB: You need the `libmysqlclient-dev` package (for Ubuntu) or `mysql-client` (fo
 
 WARNING: Nightly Rust version is required for this project in order to compile (caused by the static linking of some non-bundles libraries)
 
+#### Testing
+
+In order to launch tests you need to run the container first:
+
+`docker-compose -f docker-compose.yml -f docker/docker-compose.test.yml up -d`
+
+Please be sure to create your own `config.toml` inside the `config` directory before running the container.
+
+Then simply launch: `cargo test +nightly`
+
 ## Usage
 
 Run without arguments to start with default configuration or with `--help` to show the help summary:

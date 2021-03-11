@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  db:
+    image: mariadb:latest
+    container_name: r_db
+    environment:
+      TZ: Europe/Rome
+      MYSQL_DATABASE: test
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_TCP_PORT: 3306
+    expose:
+      - 3306
+    ports:
+      - 3312:3306
+
+  rabbitmq:
+    build: ./docker/images/rabbitmq
+    container_name: rabbitmq
+    expose:
+      - $RABBITMQ_PORT
+    ports:
+      - $RABBITMQ_PUBLIC_PORT:$RABBITMQ_PORT
+      - 15672:15672
