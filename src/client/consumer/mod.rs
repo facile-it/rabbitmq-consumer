@@ -91,10 +91,7 @@ impl Consumer {
                     signal(SignalKind::terminate()).map_err(ConsumerError::IoError)?;
                 let sigterm = sigterm.recv().map(|_| Ok(ConsumerStatus::Killed));
 
-                let mut futures = Vec::new();
-                futures.push(sigint.boxed());
-                futures.push(sigquit.boxed());
-                futures.push(sigterm.boxed());
+                let mut futures = vec![sigint.boxed(), sigquit.boxed(), sigterm.boxed()];
 
                 info!("Managing queues...");
 

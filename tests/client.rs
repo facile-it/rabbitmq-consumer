@@ -6,7 +6,7 @@ use lapin::Connection as LapinConnection;
 
 use rabbitmq_consumer_lib::client::consumer::channel::Channel;
 use rabbitmq_consumer_lib::client::consumer::connection::{Connection, ConnectionError};
-use rabbitmq_consumer_lib::client::consumer::{Consumer, ConsumerResult};
+use rabbitmq_consumer_lib::client::consumer::{Consumer, ConsumerStatus};
 use rabbitmq_consumer_lib::config::file::File;
 use rabbitmq_consumer_lib::config::queue::config::QueueConfig;
 use rabbitmq_consumer_lib::config::queue::Queue;
@@ -16,6 +16,7 @@ fn get_queues() -> Vec<QueueConfig> {
     vec![
         QueueConfig {
             id: 1,
+            prefetch_count: None,
             queue_name: "example".into(),
             consumer_name: "example".into(),
             command: "echo 1".into(),
@@ -31,6 +32,7 @@ fn get_queues() -> Vec<QueueConfig> {
         },
         QueueConfig {
             id: 2,
+            prefetch_count: Some(1),
             queue_name: "example2".into(),
             consumer_name: "example".into(),
             command: "echo 1".into(),
@@ -46,6 +48,7 @@ fn get_queues() -> Vec<QueueConfig> {
         },
         QueueConfig {
             id: 3,
+            prefetch_count: None,
             queue_name: "example3".into(),
             consumer_name: "example".into(),
             command: "echo 1".into(),
@@ -170,7 +173,12 @@ async fn consumer_changed() {
     let consumer = Consumer::new(config);
 
     let result = consumer.consume(0, queue_config, channel, queue).await;
-
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), ConsumerResult::CountChanged);
+    match result {
+        Ok(result) => {
+            assert_eq!(result, ConsumerStatus::CountChanged);
+        }
+        Err(e) => {
+            assert!(false, "{:#?}", e);
+        }
+    }
 }

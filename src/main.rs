@@ -17,7 +17,7 @@ async fn main() -> Result<(), ConsumerError> {
         .format(|buf, record| {
             writeln!(
                 buf,
-                "{} [{}] - {}",
+                "{} [{}] {}",
                 Local::now().format("%Y-%m-%dT%H:%M:%S"),
                 record.level(),
                 record.args()

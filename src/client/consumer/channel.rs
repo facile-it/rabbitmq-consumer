@@ -20,7 +20,7 @@ impl Channel {
         let channel = connection.create_channel().await?;
         channel
             .basic_qos(
-                1,
+                queue.prefetch_count.unwrap_or(1) as u16,
                 BasicQosOptions {
                     ..Default::default()
                 },

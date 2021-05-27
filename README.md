@@ -4,12 +4,13 @@
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
 
-## 1.2.0 warning
+## Version 1.2.0 and 1.2.3 warning
 
-In order to use this version correctly and only if you use the MySQL configuration for queues, you have to update your `queues` table schema adding a new `nack_code` integer field:
+In order to use this version correctly and only if you use the MySQL configuration for queues, you have to update your `queues` table schema adding a new `nack_code` and `prefetch_count` integer columns:
 
 ```sql
 ALTER TABLE queues ADD nack_code INT(11) DEFAULT 2 NULL;
+ALTER TABLE queues ADD prefetch_count INT(11) DEFAULT 1 NULL;
 ```
 
 ## Installation
