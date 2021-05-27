@@ -4,6 +4,8 @@ mod message;
 
 use async_std::sync::{Arc, RwLock};
 
+use log::{error, info};
+
 use tokio::signal::unix::{signal, SignalKind};
 use tokio_stream::StreamExt;
 
@@ -13,7 +15,7 @@ use futures::future::FutureExt;
 use lapin::options::{BasicCancelOptions, BasicConsumeOptions, BasicRecoverOptions};
 use lapin::{types::FieldTable, Channel as LapinChannel, Error as LapinError, Queue as LapinQueue};
 
-use crate::client::consumer::channel::{Channel, ChannelError};
+use crate::client::consumer::channel::Channel;
 use crate::client::consumer::connection::{Connection, ConnectionError};
 use crate::client::consumer::message::{Message, MessageError};
 use crate::client::executor::events::{Events, EventsHandler};
@@ -28,7 +30,7 @@ const CONSUMER_WAIT: u64 = 60000;
 const DEFAULT_WAIT_PART: u64 = 1000;
 
 #[derive(Debug, PartialEq)]
-pub enum ConsumerResult {
+pub enum ConsumerStatus {
     ConsumerChanged,
     CountChanged,
     GenericOk,
@@ -40,9 +42,10 @@ pub enum ConsumerError {
     LapinError(LapinError),
     IoError(std::io::Error),
     ConnectionError(ConnectionError),
-    ChannelError(ChannelError),
     MessageError(MessageError),
 }
+
+type ConsumerResult<T> = Result<T, ConsumerError>;
 
 pub struct Consumer {
     queue: Arc<RwLock<Queue>>,
@@ -71,7 +74,7 @@ impl Consumer {
         }
     }
 
-    pub async fn run(&mut self) -> Result<ConsumerResult, ConsumerError> {
+    pub async fn run(&mut self) -> ConsumerResult<ConsumerStatus> {
         match self.connection.get_connection().await {
             Ok(connection) => {
                 for hook in &self.hooks {
@@ -81,17 +84,14 @@ impl Consumer {
                 }
 
                 let mut sigint = signal(SignalKind::interrupt()).map_err(ConsumerError::IoError)?;
-                let sigint = sigint.recv().map(|_| Ok(ConsumerResult::Killed));
+                let sigint = sigint.recv().map(|_| Ok(ConsumerStatus::Killed));
                 let mut sigquit = signal(SignalKind::quit()).map_err(ConsumerError::IoError)?;
-                let sigquit = sigquit.recv().map(|_| Ok(ConsumerResult::Killed));
+                let sigquit = sigquit.recv().map(|_| Ok(ConsumerStatus::Killed));
                 let mut sigterm =
                     signal(SignalKind::terminate()).map_err(ConsumerError::IoError)?;
-                let sigterm = sigterm.recv().map(|_| Ok(ConsumerResult::Killed));
+                let sigterm = sigterm.recv().map(|_| Ok(ConsumerStatus::Killed));
 
-                let mut futures = Vec::new();
-                futures.push(sigint.boxed());
-                futures.push(sigquit.boxed());
-                futures.push(sigterm.boxed());
+                let mut futures = vec![sigint.boxed(), sigquit.boxed(), sigterm.boxed()];
 
                 info!("Managing queues...");
 
@@ -115,7 +115,7 @@ impl Consumer {
 
                                     self.consume(index, queue.clone(), c, q).boxed()
                                 }
-                                Err(e) => async { Err(ConsumerError::ChannelError(e)) }.boxed(),
+                                Err(e) => async { Err(ConsumerError::LapinError(e)) }.boxed(),
                             },
                         );
                     }
@@ -135,7 +135,7 @@ impl Consumer {
         queue_config: QueueConfig,
         channel: LapinChannel,
         queue: LapinQueue,
-    ) -> Result<ConsumerResult, ConsumerError> {
+    ) -> ConsumerResult<ConsumerStatus> {
         let consumer_name = format!("{}_consumer_{}", queue_config.consumer_name, index);
 
         if !self.queue.write().await.is_enabled(queue_config.id) {
@@ -192,7 +192,7 @@ impl Consumer {
                                         .await
                                         .is_err()
                                     {
-                                        info!(
+                                        error!(
                                             "[{}] Error canceling the consumer #{}, returning...",
                                             queue_config.queue_name, index
                                         );
@@ -206,13 +206,13 @@ impl Consumer {
                                     .await
                                     .is_err()
                                 {
-                                    info!(
+                                    error!(
                                             "[{}] Error recovering message for consumer #{}, message is not ackable...",
                                             queue_config.queue_name,
                                             index
                                         );
 
-                                    return Ok(ConsumerResult::GenericOk);
+                                    return Ok(ConsumerStatus::GenericOk);
                                 }
 
                                 info!(
@@ -221,27 +221,27 @@ impl Consumer {
                                         index
                                     );
 
-                                return Ok(ConsumerResult::ConsumerChanged);
+                                return Ok(ConsumerStatus::ConsumerChanged);
                             } else if is_changed {
                                 info!(
                                     "[{}] Consumers count changed, messages recovered...",
                                     queue_config.queue_name
                                 );
 
-                                return Ok(ConsumerResult::CountChanged);
+                                return Ok(ConsumerStatus::CountChanged);
                             }
                         }
                         Err(e) => {
-                            info!("[{}] Error getting messages.", queue_config.queue_name);
+                            error!("[{}] Error getting messages.", queue_config.queue_name);
 
                             return Err(ConsumerError::LapinError(e));
                         }
                     }
                 }
 
-                info!("Messages has been processed.");
+                info!("Messages have been processed.");
 
-                Ok(ConsumerResult::GenericOk)
+                Ok(ConsumerStatus::GenericOk)
             }
             Err(e) => Err(ConsumerError::LapinError(e)),
         }
@@ -251,6 +251,7 @@ impl Consumer {
         while async {
             if !self.queue.write().await.is_enabled(queue_config.id) {
                 utils::wait(CONSUMER_WAIT).await;
+
                 Some(())
             } else {
                 None

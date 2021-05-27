@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 use chrono::{self, NaiveTime};
 
 use crate::utils::{
@@ -8,6 +10,8 @@ use crate::utils::{
 pub struct QueueConfig {
     #[serde(deserialize_with = "i32_or_string")]
     pub id: i32,
+    #[serde(deserialize_with = "option_i32_or_string", default)]
+    pub prefetch_count: Option<i32>,
     pub queue_name: String,
     pub consumer_name: String,
     pub command: String,

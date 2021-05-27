@@ -4,14 +4,13 @@ mod executor;
 use std::thread;
 use std::time::Duration;
 
+use log::{error, info};
+
 use crate::client::consumer::ConsumerError;
-use crate::client::executor::{Executor, ExecutorResult};
+use crate::client::executor::{Executor, ExecutorError, ExecutorStatus};
 use crate::config::Config;
 
-pub enum ClientResult {
-    Ok,
-    ConsumerError(ConsumerError),
-}
+type ClientResult<T> = Result<T, ConsumerError>;
 
 pub struct Client {
     executor: Executor,
@@ -24,33 +23,33 @@ impl Client {
         }
     }
 
-    pub async fn run(&mut self) -> ClientResult {
+    pub async fn run(&mut self) -> ClientResult<()> {
         loop {
             match self.executor.execute().await {
-                ExecutorResult::Restart => info!("Consumer count changed, restarting..."),
-                ExecutorResult::Wait(error, waiting) => {
-                    info!("Error ({:?}), waiting {} seconds...", error, waiting / 1000);
-
-                    thread::sleep(Duration::from_millis(waiting));
-                }
-                ExecutorResult::Exit => {
+                Ok(ExecutorStatus::Restart) => info!("Consumer count changed, restarting..."),
+                Ok(ExecutorStatus::Exit) => {
                     info!("Process finished, exiting...");
 
                     break;
                 }
-                ExecutorResult::Killed => {
+                Ok(ExecutorStatus::Killed) => {
                     info!("Process killed, exiting...");
 
                     break;
                 }
-                ExecutorResult::Error(e) => {
-                    info!("Error ({:?}), exiting...", e);
+                Err(ExecutorError::Wait(error, waiting)) => {
+                    error!("Error ({:?}), waiting {} seconds...", error, waiting / 1000);
 
-                    return ClientResult::ConsumerError(e);
+                    thread::sleep(Duration::from_millis(waiting));
+                }
+                Err(ExecutorError::Error(e)) => {
+                    error!("Error ({:?}), exiting...", e);
+
+                    return Err(e);
                 }
             }
         }
 
-        ClientResult::Ok
+        Ok(())
     }
 }

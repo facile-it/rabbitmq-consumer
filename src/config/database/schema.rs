@@ -1,6 +1,7 @@
 table! {
     queues {
         id -> Integer,
+        prefetch_count -> Nullable<Integer>,
         queue_name -> Varchar,
         consumer_name -> Varchar,
         command -> Varchar,

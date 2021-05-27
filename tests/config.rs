@@ -100,6 +100,7 @@ async fn retry_type() {
     let queues = vec![
         QueueConfig {
             id: 1,
+            prefetch_count: None,
             queue_name: "example".into(),
             consumer_name: "example".into(),
             command: "echo 1".into(),
@@ -115,6 +116,7 @@ async fn retry_type() {
         },
         QueueConfig {
             id: 2,
+            prefetch_count: Some(2),
             queue_name: "example2".into(),
             consumer_name: "example".into(),
             command: "echo 1".into(),
@@ -130,6 +132,7 @@ async fn retry_type() {
         },
         QueueConfig {
             id: 3,
+            prefetch_count: Some(10),
             queue_name: "example3".into(),
             consumer_name: "example".into(),
             command: "echo 1".into(),

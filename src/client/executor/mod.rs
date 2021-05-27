@@ -3,19 +3,25 @@ mod waiter;
 
 use async_std::sync::{Arc, RwLock};
 
-use crate::client::consumer::{Consumer, ConsumerError, ConsumerResult};
+use crate::client::consumer::{Consumer, ConsumerError, ConsumerStatus};
 use crate::client::executor::events::{Events, EventsHandler};
 use crate::client::executor::waiter::Waiter;
 use crate::config::Config;
 
 #[derive(Debug)]
-pub enum ExecutorResult {
+pub enum ExecutorStatus {
     Restart,
     Exit,
     Killed,
-    Wait(ConsumerError, u64),
-    Error(ConsumerError),
 }
+
+#[derive(Debug)]
+pub enum ExecutorError {
+    Error(ConsumerError),
+    Wait(ConsumerError, u64),
+}
+
+type ExecutorResult<T> = Result<T, ExecutorError>;
 
 pub struct Executor {
     waiter: Arc<RwLock<Waiter>>,
@@ -34,21 +40,21 @@ impl Executor {
         }
     }
 
-    pub async fn execute(&mut self) -> ExecutorResult {
+    pub async fn execute(&mut self) -> ExecutorResult<ExecutorStatus> {
         match self.consumer.run().await {
-            Ok(ConsumerResult::CountChanged) => ExecutorResult::Restart,
-            Ok(ConsumerResult::ConsumerChanged) => ExecutorResult::Restart,
-            Ok(ConsumerResult::GenericOk) => ExecutorResult::Exit,
-            Ok(ConsumerResult::Killed) => ExecutorResult::Killed,
+            Ok(ConsumerStatus::CountChanged) => Ok(ExecutorStatus::Restart),
+            Ok(ConsumerStatus::ConsumerChanged) => Ok(ExecutorStatus::Restart),
+            Ok(ConsumerStatus::GenericOk) => Ok(ExecutorStatus::Exit),
+            Ok(ConsumerStatus::Killed) => Ok(ExecutorStatus::Killed),
             Err(e) => {
                 let mut waiter = self.waiter.write().await;
                 waiter.on_error(&format!("{:?}", e));
 
                 if waiter.is_to_close() {
-                    return ExecutorResult::Error(e);
+                    return Err(ExecutorError::Error(e));
                 }
 
-                ExecutorResult::Wait(e, waiter.waiting)
+                Err(ExecutorError::Wait(e, waiter.waiting))
             }
         }
     }

@@ -7,6 +7,8 @@ use std::env;
 use std::fs::File;
 use std::path::Path;
 
+use log::info;
+
 use serde::Deserialize;
 
 use crate::config::queue::config::QueueConfig;
@@ -61,7 +63,7 @@ impl Config {
         match crystalsoft_utils::read_file_string(&config) {
             Err(why) => panic!("Couldn't read \"{}\": {:#?}", config, why),
             Ok(mut configuration) => {
-                info!("\"{}\" loaded correctly.", config);
+                info!("File \"{}\" loaded correctly.", config);
 
                 let variables: HashMap<_, _> = env::vars().collect();
                 for (key, value) in variables {
