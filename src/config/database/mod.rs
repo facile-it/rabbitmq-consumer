@@ -1,5 +1,7 @@
 mod schema;
 
+use log::info;
+
 use diesel::mysql::MysqlConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};

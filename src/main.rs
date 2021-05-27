@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::io::Write;
 
 use clap::{App, Arg};
@@ -9,10 +8,11 @@ use env_logger::Env;
 
 use chrono::Local;
 
-use rabbitmq_consumer_lib::client::{Client, ClientResult};
+use rabbitmq_consumer_lib::client::consumer::ConsumerError;
+use rabbitmq_consumer_lib::client::Client;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), ConsumerError> {
     env_logger::Builder::from_env(Env::default().default_filter_or("info"))
         .format(|buf, record| {
             writeln!(
@@ -61,14 +61,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("{}", description);
     info!("");
 
-    match Client::new(
+    Client::new(
         matches.value_of("env").unwrap(),
         matches.value_of("path").unwrap(),
     )
     .run()
     .await
-    {
-        ClientResult::Ok => Ok(()),
-        ClientResult::ConsumerError(_) => Ok(()),
-    }
 }

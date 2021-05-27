@@ -7,6 +7,8 @@ use std::env;
 use std::fs::File;
 use std::path::Path;
 
+use log::info;
+
 use serde::Deserialize;
 
 use crate::config::queue::config::QueueConfig;

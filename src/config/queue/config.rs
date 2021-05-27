@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 use chrono::{self, NaiveTime};
 
 use crate::utils::{

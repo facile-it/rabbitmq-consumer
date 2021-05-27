@@ -1,14 +1,13 @@
 use async_std::sync::Arc;
 
+use log::info;
+
 use lapin::options::{BasicQosOptions, QueueDeclareOptions};
 use lapin::{types::FieldTable, Channel as LapinChannel, Connection, Error as LapinError, Queue};
 
 use crate::config::queue::config::QueueConfig;
 
-#[derive(Debug)]
-pub enum ChannelError {
-    LapinError(LapinError),
-}
+type ChannelResult = Result<(LapinChannel, Queue), LapinError>;
 
 pub struct Channel {}
 
@@ -17,11 +16,8 @@ impl Channel {
         connection: Arc<Connection>,
         queue: QueueConfig,
         prefix: S,
-    ) -> Result<(LapinChannel, Queue), ChannelError> {
-        let channel = connection
-            .create_channel()
-            .await
-            .map_err(ChannelError::LapinError)?;
+    ) -> ChannelResult {
+        let channel = connection.create_channel().await?;
         channel
             .basic_qos(
                 1,
@@ -29,8 +25,7 @@ impl Channel {
                     ..Default::default()
                 },
             )
-            .await
-            .map_err(ChannelError::LapinError)?;
+            .await?;
 
         info!(
             "[{}] Created channel with id: {}",
@@ -48,8 +43,7 @@ impl Channel {
                 },
                 FieldTable::default(),
             )
-            .await
-            .map_err(ChannelError::LapinError)?;
+            .await?;
 
         Ok((channel, queue))
     }

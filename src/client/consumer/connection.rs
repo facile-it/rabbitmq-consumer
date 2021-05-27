@@ -1,5 +1,7 @@
 use async_std::sync::Arc;
 
+use log::info;
+
 use lapin::{
     uri::AMQPAuthority, uri::AMQPUri, uri::AMQPUserInfo, Connection as LapinConnection,
     ConnectionProperties, Error,
@@ -13,9 +15,11 @@ pub enum ConnectionError {
     LapinError(Error),
 }
 
+type ConnectionResult = Result<Arc<LapinConnection>, ConnectionError>;
+
 pub struct Connection {
     config: RabbitConfig,
-    lapin: Result<Arc<LapinConnection>, ConnectionError>,
+    lapin: ConnectionResult,
 }
 
 impl Connection {
@@ -26,7 +30,7 @@ impl Connection {
         }
     }
 
-    pub async fn get_connection(&mut self) -> Result<Arc<LapinConnection>, ConnectionError> {
+    pub async fn get_connection(&mut self) -> ConnectionResult {
         if let Ok(ref lapin) = self.lapin {
             if lapin.status().errored() {
                 self.lapin = Err(ConnectionError::NotConnected);

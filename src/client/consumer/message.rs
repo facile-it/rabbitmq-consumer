@@ -5,6 +5,8 @@ use std::str;
 
 use async_std::sync::{Arc, RwLock};
 
+use log::{error, info};
+
 use tokio::process::Command;
 
 use futures::future::select_all;
@@ -26,9 +28,7 @@ pub enum MessageError {
     LapinError(LapinError),
 }
 
-pub enum MessageResult {
-    GenericOk,
-}
+type MessageResult<T> = Result<T, MessageError>;
 
 pub enum CommandResult {
     Timeout,
@@ -59,7 +59,7 @@ impl Message {
         queue_config: &QueueConfig,
         channel: &Channel,
         delivery: Delivery,
-    ) -> Result<MessageResult, MessageError> {
+    ) -> MessageResult<()> {
         let msg = {
             match str::from_utf8(&delivery.data) {
                 Ok(msg) => {
@@ -116,7 +116,7 @@ impl Message {
         mut message_command: MessageCommand,
         channel: &Channel,
         delivery: Delivery,
-    ) -> Result<MessageResult, MessageError> {
+    ) -> MessageResult<()> {
         let timeout = utils::wait(
             self.queue
                 .write()
@@ -133,13 +133,6 @@ impl Message {
                 match output {
                     Ok(output) => match retry_type {
                         RetryType::Ignored => {
-                            info!(
-                                "[{}] Command \"{}\" executed on consumer #{} and result ignored, message removed.",
-                                queue_config.queue_name,
-                                message_command.human,
-                                index
-                            );
-
                             channel
                                 .basic_ack(
                                     delivery.delivery_tag,
@@ -147,6 +140,13 @@ impl Message {
                                 )
                                 .map_err(MessageError::LapinError)
                                 .await?;
+
+                            info!(
+                                "[{}] Command \"{}\" executed on consumer #{} and result ignored, message removed.",
+                                queue_config.queue_name,
+                                message_command.human,
+                                index
+                            );
                         }
                         _ => {
                             let exit_code =
@@ -166,11 +166,6 @@ impl Message {
 
                             match exit_code {
                                 ACKNOWLEDGEMENT => {
-                                    info!(
-                                        "[{}] Command \"{}\" succeeded on consumer #{}, message removed.",
-                                        queue_config.queue_name, message_command.human, index
-                                    );
-
                                     channel
                                         .basic_ack(
                                             delivery.delivery_tag,
@@ -178,6 +173,11 @@ impl Message {
                                         )
                                         .map_err(MessageError::LapinError)
                                         .await?;
+
+                                    info!(
+                                        "[{}] Command \"{}\" succeeded on consumer #{}, message removed.",
+                                        queue_config.queue_name, message_command.human, index
+                                    );
 
                                     self.queue.write().await.set_queue_wait(
                                         queue_config.id,
@@ -187,14 +187,6 @@ impl Message {
                                     );
                                 }
                                 NEGATIVE_ACKNOWLEDGEMENT_AND_RE_QUEUE => {
-                                    info!(
-                                        "[{}] Command \"{}\" failed on consumer #{}, message rejected and requeued. Output:\n{:#?}",
-                                        queue_config.queue_name,
-                                        message_command.human,
-                                        index,
-                                        output
-                                    );
-
                                     channel
                                         .basic_reject(
                                             delivery.delivery_tag,
@@ -202,6 +194,14 @@ impl Message {
                                         )
                                         .map_err(MessageError::LapinError)
                                         .await?;
+
+                                    info!(
+                                        "[{}] Command \"{}\" failed on consumer #{}, message rejected and requeued. Output:\n{:#?}",
+                                        queue_config.queue_name,
+                                        message_command.human,
+                                        index,
+                                        output
+                                    );
 
                                     let ms = self
                                         .queue
@@ -224,14 +224,6 @@ impl Message {
                                     );
                                 }
                                 _ => {
-                                    info!(
-                                        "[{}] Command \"{}\" failed on consumer #{}, message rejected. Output:\n{:#?}",
-                                        queue_config.queue_name,
-                                        message_command.human,
-                                        index,
-                                        output
-                                    );
-
                                     channel
                                         .basic_reject(
                                             delivery.delivery_tag,
@@ -239,20 +231,19 @@ impl Message {
                                         )
                                         .map_err(MessageError::LapinError)
                                         .await?;
+
+                                    info!(
+                                        "[{}] Command \"{}\" failed on consumer #{}, message rejected. Output:\n{:#?}",
+                                        queue_config.queue_name,
+                                        message_command.human,
+                                        index,
+                                        output
+                                    );
                                 }
                             }
                         }
                     },
                     Err(e) => {
-                        info!(
-                            "[{}] Error {:?} executing the command \"{}\" on consumer #{}, message \"{}\" rejected...",
-                            queue_config.queue_name,
-                            e,
-                            message_command.human,
-                            index,
-                            msg
-                        );
-
                         channel
                             .basic_reject(
                                 delivery.delivery_tag,
@@ -260,26 +251,35 @@ impl Message {
                             )
                             .map_err(MessageError::LapinError)
                             .await?;
+
+                        error!(
+                            "[{}] Error {:?} executing the command \"{}\" on consumer #{}, message \"{}\" rejected...",
+                            queue_config.queue_name,
+                            e,
+                            message_command.human,
+                            index,
+                            msg
+                        );
                     }
                 }
 
-                Ok(MessageResult::GenericOk)
+                Ok(())
             }
             CommandResult::Timeout => {
-                info!(
-                        "[{}] Timeout occurred executing the command \"{}\" on consumer #{}, message \"{}\" rejected and requeued...",
-                        queue_config.queue_name,
-                        message_command.human,
-                        index,
-                        msg
-                    );
-
                 channel
                     .basic_reject(delivery.delivery_tag, BasicRejectOptions { requeue: true })
                     .map_err(MessageError::LapinError)
                     .await?;
 
-                Ok(MessageResult::GenericOk)
+                info!(
+                    "[{}] Timeout occurred executing the command \"{}\" on consumer #{}, message \"{}\" rejected and requeued...",
+                    queue_config.queue_name,
+                    message_command.human,
+                    index,
+                    msg
+                );
+
+                Ok(())
             }
         }
     }
