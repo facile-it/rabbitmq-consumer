@@ -56,7 +56,7 @@ Run without arguments to start with default configuration or with `--help` to sh
 
 ```
 $ rabbitmq-consumer
-rabbitmq-consumer 1.0.0
+rabbitmq-consumer 1.2.3
 
 A configurable RabbitMQ consumer made in Rust, useful for a stable and reliable CLI commands processor.
 
@@ -117,6 +117,9 @@ This section (a TOML array) defines all queues and consumers.
 
 > `id = 1`
 >> The virtual ID of this queue: must be different for each queue.
+
+> `prefetch_count = 1`
+>> If specified, limits the number of unacknowledged messages on a channel (or connection) when consuming (default is 1)
 
 > `queue_name = "example"`
 >> The internal name of the queue, also used in combination with the prefix to generate the channel and queue name.
@@ -202,6 +205,7 @@ CREATE TABLE queues
 (
   id              INT AUTO_INCREMENT
     PRIMARY KEY,
+  prefetch_count  INT(11) DEFAULT 1                 NULL,
   queue_name      VARCHAR(255)                      NOT NULL,
   consumer_name   VARCHAR(255)                      NOT NULL,
   command         VARCHAR(250)                      NOT NULL,
